@@ -23,3 +23,17 @@ Host this on Hugging Face Spaces or a Render free instance instead of your lapto
 - Extend it by adding new tools (functions) in the TOOLS section of `omni.py`.
 
 Built as a starting point toward a "do anything" agent. Add tools, make it yours.
+
+## Run OMNI in your browser (free, no install)
+
+Streamlit Community Cloud hosts this agent free, straight from this repo:
+
+1. Go to https://share.streamlit.io and sign in with GitHub (bittubuilds).
+2. New app -> Repo: `omni-agent`, Branch: `main`, Main file path: `web/app_streamlit.py` -> Deploy.
+3. In the app's Settings -> Secrets, add: `GEMINI_API_KEY = "your_free_key"`
+   (free key: https://aistudio.google.com/apikey)
+4. Open your permanent app URL in any browser and chat. Nothing installs on your device.
+
+Note: free hosting has ephemeral storage (memory.json resets on restart) and
+Hugging Face Spaces now requires a PRO subscription for Gradio apps, which is
+why Streamlit Cloud is the free option.
