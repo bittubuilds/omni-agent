@@ -37,7 +37,8 @@
     It is saved only in your own browser, never on any server.<br>
     You only do this once.</p>
     <input id="keyinput" type="password" placeholder="gsk_..." autocomplete="off">
-    <button onclick="saveKey()">Save &amp; Start</button>
+    <p id="keystatus" style="display:none; font-size:.8rem; margin-bottom:10px;"></p>
+    <button id="savebtn" onclick="saveKey()">Save &amp; Start</button>
   </div>
 </div>
 <header>
@@ -61,13 +62,49 @@ const CONFIG = {
 const KEYSTORE = "omni_groq_key";
 let apiKey = localStorage.getItem(KEYSTORE) || "";
 
-function saveKey() {
-  const v = document.getElementById("keyinput").value.trim();
-  if (!v) { alert("Paste the key first"); return; }
-  localStorage.setItem(KEYSTORE, v);
-  apiKey = v;
-  document.getElementById("setup").style.display = "none";
-  document.getElementById("input").focus();
+async function saveKey() {
+  const el = document.getElementById("keyinput");
+  const st = document.getElementById("keystatus");
+  const btn = document.getElementById("savebtn");
+  let v = el.value.trim().replace(/^Bearer\s+/i, "");
+  if (!v.startsWith("gsk_")) {
+    st.style.display = "block";
+    st.style.color = "#ff6b6b";
+    st.textContent = "That doesn't look like a Groq key. It starts with gsk_ - copy it exactly, no extra spaces.";
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = "Checking key...";
+  try {
+    const r = await fetch(CONFIG.baseUrl + "/models", {
+      headers: { "Authorization": "Bearer " + v }
+    });
+    if (r.ok) {
+      localStorage.setItem(KEYSTORE, v);
+      apiKey = v;
+      st.style.display = "block";
+      st.style.color = "#2ecc71";
+      st.textContent = "Key is valid. Starting...";
+      setTimeout(() => {
+        document.getElementById("setup").style.display = "none";
+        document.getElementById("input").focus();
+      }, 600);
+    } else if (r.status === 401) {
+      st.style.display = "block";
+      st.style.color = "#ff6b6b";
+      st.textContent = "Groq says this key is invalid or expired. Re-copy it (a new one: console.groq.com -> API Keys -> Create API Key).";
+      btn.disabled = false;
+      btn.textContent = "Save & Start";
+    } else {
+      throw new Error("HTTP " + r.status);
+    }
+  } catch (e) {
+    st.style.display = "block";
+    st.style.color = "#ff6b6b";
+    st.textContent = "Could not check the key (network). Check your internet and try again.";
+    btn.disabled = false;
+    btn.textContent = "Save & Start";
+  }
 }
 function changeKey() {
   document.getElementById("keyinput").value = apiKey;
