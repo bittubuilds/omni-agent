@@ -1,39 +1,62 @@
 # OMNI - Free General-Purpose AI Agent
 
-A lightweight AI agent you can run for Rs 0, built on Google Gemini's free API tier.
+A lightweight AI agent that runs for Rs 0. Web search, long-term memory, code
+execution, and tool-chaining decisions, powered by any free AI provider.
 
-## What it can do
-- **Search the web** (DuckDuckGo, no API key needed)
-- **Remember** facts permanently across conversations (`memory.json`)
-- **Recall** anything it has remembered
-- **Write and run Python code** (and generate code in any language)
-- **Make decisions** by chaining the tools above
+## Pick a free brain (any ONE, no credit card)
 
-## Setup (5 minutes)
-1. Get a free API key: https://aistudio.google.com/apikey
-2. `pip install google-genai requests`
-3. `export GEMINI_API_KEY=your_key`  (Windows: `set GEMINI_API_KEY=your_key`)
-4. `python omni.py`
+| Provider | Get a free key | Env var | Notes |
+|---|---|---|---|
+| **Groq** (easiest) | https://console.groq.com | `GROQ_API_KEY` | Fast, generous free tier, Llama 3.3 70B |
+| **OpenRouter** | https://openrouter.ai/keys | `OPENROUTER_API_KEY` | Free models tagged `:free` |
+| **Gemini** | https://aistudio.google.com/apikey | `GEMINI_API_KEY` | Google free tier |
 
-## Run in the cloud free
-Host this on Hugging Face Spaces or a Render free instance instead of your laptop/phone.
+All three are interchangeable - same agent, same tools.
 
-## Notes
-- Free tier has daily request caps and may slow down at busy hours.
-- Extend it by adding new tools (functions) in the TOOLS section of `omni.py`.
+## Run on your computer (CLI)
 
-Built as a starting point toward a "do anything" agent. Add tools, make it yours.
+```
+pip install -r requirements.txt
+export GROQ_API_KEY=your_key        # Windows: set GROQ_API_KEY=your_key
+python omni.py
+```
 
-## Run OMNI in your browser (free, no install)
+## Run in your browser (free, no install)
 
 Streamlit Community Cloud hosts this agent free, straight from this repo:
 
-1. Go to https://share.streamlit.io and sign in with GitHub (bittubuilds).
+1. Go to https://share.streamlit.io and sign in with GitHub.
 2. New app -> Repo: `omni-agent`, Branch: `main`, Main file path: `web/app_streamlit.py` -> Deploy.
-3. In the app's Settings -> Secrets, add: `GEMINI_API_KEY = "your_free_key"`
-   (free key: https://aistudio.google.com/apikey)
+3. In the app's Settings -> Secrets, add ONE of:
+   `GROQ_API_KEY = "your_key"` (easiest) or `OPENROUTER_API_KEY = "..."` or `GEMINI_API_KEY = "..."`
 4. Open your permanent app URL in any browser and chat. Nothing installs on your device.
 
-Note: free hosting has ephemeral storage (memory.json resets on restart) and
-Hugging Face Spaces now requires a PRO subscription for Gradio apps, which is
-why Streamlit Cloud is the free option.
+## Hugging Face Space (optional)
+
+`web/app.py` is a Gradio version for HF Spaces. Note: HF now requires a PRO
+subscription to host Gradio apps, so Streamlit Cloud is the free option.
+
+## What it can do
+
+- **Search the web** (DuckDuckGo via `ddgs`, no API key needed)
+- **Remember** facts permanently across conversations (`memory.json`)
+- **Recall** anything it has remembered
+- **Write and run Python code** (and generate code in any language)
+- **Make decisions** by chaining the tools above (max 8 tool rounds per reply)
+
+## Notes
+
+- Free tiers have daily request caps and may slow down at busy hours.
+- On free web hosting, storage is ephemeral: `memory.json` resets on app restart.
+- Use the `MODEL` env var to switch models (e.g. a different `:free` OpenRouter model).
+- Keep web deployments private - the agent runs code you send it.
+
+## Structure
+
+- `omni_core.py` - shared engine (tools + provider-agnostic chat loop)
+- `omni.py` - CLI chat
+- `web/app_streamlit.py` - Streamlit browser app (free hosting)
+- `web/app.py` - Gradio browser app (HF Spaces)
+
+Add tools by defining a function + schema in `omni_core.py` and registering it in
+`TOOL_IMPLS` / `TOOL_SCHEMAS`. That's the path to a "do anything" agent.
