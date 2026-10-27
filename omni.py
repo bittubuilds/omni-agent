@@ -54,6 +54,18 @@ SYSTEM_PROMPT = textwrap.dedent("""
 
 def search_web(query: str) -> str:
     """Search the internet (DuckDuckGo) and return the top results."""
+    # Primary: ddgs library (handles DuckDuckGo reliably)
+    try:
+        from ddgs import DDGS
+        hits = list(DDGS().text(query, max_results=6))
+        out = []
+        for h in hits:
+            out.append(f"- {h.get('title', '')} ({h.get('href', '')})\n  {h.get('body', '')}")
+        if out:
+            return "\n".join(out)
+    except Exception:
+        pass
+    # Fallback: DuckDuckGo HTML directly
     try:
         r = requests.post(
             "https://html.duckduckgo.com/html/",
@@ -63,7 +75,6 @@ def search_web(query: str) -> str:
         )
         import re
         results = []
-        # crude but works: pull result links + snippets from the HTML
         for m in re.finditer(
             r'<a[^>]+class="result__a"[^>]*href="[^"]*uddg=([^"]+)"[^>]*>(.*?)</a>', r.text
         ):
@@ -123,7 +134,7 @@ def run_python(code: str) -> str:
 
 # ---------------- MAIN LOOP ----------------
 
-chat = client.chats.create_model(
+chat = client.chats.create(
     model="gemini-2.0-flash",  # free tier
     config={"system_instruction": SYSTEM_PROMPT,
             "tools": [search_web, remember, recall, run_python]},
