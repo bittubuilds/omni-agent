@@ -7,7 +7,7 @@ execution, and tool-chaining decisions, powered by any free AI provider.
 
 | Provider | Get a free key | Env var | Notes |
 |---|---|---|---|
-| **Groq** (easiest) | https://console.groq.com | `GROQ_API_KEY` | Fast, generous free tier, Llama 3.3 70B |
+| **Groq** (easiest) | https://console.groq.com | `GROQ_API_KEY` | Fast, generous free tier, GPT-OSS-120B |
 | **OpenRouter** | https://openrouter.ai/keys | `OPENROUTER_API_KEY` | Free models tagged `:free` |
 | **Gemini** | https://aistudio.google.com/apikey | `GEMINI_API_KEY` | Google free tier |
 
