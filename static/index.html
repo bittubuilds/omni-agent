@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OMNI - Free AI Agent</title>
+<style>
+  :root { --bg:#0f1117; --card:#1a1d29; --text:#e8eaf2; --muted:#8b91a7; --accent:#6c5ce7; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; }
+  header { padding:14px 18px; background:var(--card); border-bottom:1px solid #2a2e3f; }
+  header h1 { font-size:1.1rem; }
+  header p { font-size:.75rem; color:var(--muted); }
+  #chat { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; }
+  .msg { max-width:85%; padding:10px 14px; border-radius:14px; white-space:pre-wrap; word-break:break-word; line-height:1.45; }
+  .user { align-self:flex-end; background:var(--accent); color:#fff; border-bottom-right-radius:4px; }
+  .bot { align-self:flex-start; background:var(--card); border-bottom-left-radius:4px; }
+  .tool { align-self:flex-start; font-size:.7rem; color:var(--muted); font-style:italic; }
+  .thinking { align-self:flex-start; color:var(--muted); font-size:.85rem; padding:8px 14px; }
+  #inputbar { display:flex; gap:8px; padding:12px; background:var(--card); border-top:1px solid #2a2e3f; }
+  #input { flex:1; padding:12px 16px; border-radius:22px; border:1px solid #2a2e3f; background:var(--bg); color:var(--text); font-size:1rem; outline:none; }
+  #send { padding:12px 20px; border-radius:22px; border:none; background:var(--accent); color:#fff; font-size:1rem; cursor:pointer; }
+  #send:disabled { opacity:.5; }
+</style>
+</head>
+<body>
+<header>
+  <h1>OMNI - Free AI Agent</h1>
+  <p>Searches the web · Remembers facts · Runs code. Free forever, runs in your browser.</p>
+</header>
+<div id="chat"></div>
+<div id="inputbar">
+  <input id="input" placeholder="Ask OMNI anything..." autocomplete="off">
+  <button id="send">➤</button>
+</div>
+<script>
+const CONFIG = {
+  baseUrl: "https://api.groq.com/openai/v1",
+  apiKey: "YOUR_GROQ_API_KEY",
+  model: "openai/gpt-oss-120b",
+  maxRounds: 8
+};
+
+const SYSTEM_PROMPT =
+  "You are OMNI, a general-purpose AI agent. You help the user with ANY task. " +
+  "You have real tools. Use them actively: " +
+  "- When a question needs current facts, call search_web first. " +
+  "- When the user tells you something worth keeping (preferences, facts, projects), call remember. " +
+  "- When past context would help, call recall. " +
+  "- For calculations or data processing, call run_js with JavaScript code. " +
+  "You can also write code in any language as output. Think step by step.";
+
+let messages = [{ role: "system", content: SYSTEM_PROMPT }];
+
+// ---------------- TOOLS ----------------
+async function search_web(query) {
+  const out = [];
+  try {
+    const r = await fetch("https://api.duckduckgo.com/?q=" + encodeURIComponent(query) + "&format=json&no_html=1&skip_disambig=1");
+    const d = await r.json();
+    if (d.AbstractText) out.push("- " + d.Heading + ": " + d.AbstractText + " (" + d.AbstractURL + ")");
+    (d.RelatedTopics || []).slice(0, 5).forEach(t => { if (t.Text) out.push("- " + t.Text + " (" + t.FirstURL + ")"); });
+  } catch (e) {}
+  try {
+    const r2 = await fetch("https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=" +
+      encodeURIComponent(query) + "&format=json&origin=*&srlimit=4");
+    const d2 = await r2.json();
+    (d2.query.search || []).forEach(s => {
+      out.push("- " + s.title + " (https://en.wikipedia.org/wiki/" +
+        encodeURIComponent(s.title.replace(/ /g, "_")) + "): " + s.snippet.replace(/<[^>]+>/g, ""));
+    });
+  } catch (e) {}
+  return out.length ? out.join("\n") : "No results found. Try different words.";
+}
+
+function remember(fact) {
+  const mem = JSON.parse(localStorage.getItem("omni_memory") || "[]");
+  mem.push({ fact, date: new Date().toISOString() });
+  localStorage.setItem("omni_memory", JSON.stringify(mem));
+  return "Remembered.";
+}
+
+function recall(query) {
+  const mem = JSON.parse(localStorage.getItem("omni_memory") || "[]");
+  const words = query.toLowerCase().split(/\s+/);
+  const hits = mem.filter(m => words.some(w => m.fact.toLowerCase().includes(w)));
+  return hits.length ? hits.map(h => "- " + h.fact).join("\n") : "Nothing in memory about that.";
+}
+
+function run_js(code) {
+  try {
+    const logs = [];
+    const c = { log: (...a) => logs.push(a.map(x => typeof x === "object" ? JSON.stringify(x) : String(x)).join(" ")),
+                error: (...a) => logs.push("ERROR: " + a.join(" ")) };
+    const fn = new Function("console", '"use strict";\n' + code);
+    const out = fn(c);
+    let result = out !== undefined ? String(out) : "";
+    if (logs.length) result = logs.join("\n") + (result ? "\n" + result : "");
+    return result || "(ran successfully, no output)";
+  } catch (e) { return "Error: " + e.message; }
+}
+
+const TOOLS = [
+  { type: "function", function: { name: "search_web",
+    description: "Search the internet for current information. Returns results with titles, links, snippets.",
+    parameters: { type: "object", properties: { query: { type: "string", description: "What to search for" } }, required: ["query"] } } },
+  { type: "function", function: { name: "remember",
+    description: "Store a fact long-term for recall in later sessions.",
+    parameters: { type: "object", properties: { fact: { type: "string", description: "The fact to store" } }, required: ["fact"] } } },
+  { type: "function", function: { name: "recall",
+    description: "Search long-term memory for anything related to a query.",
+    parameters: { type: "object", properties: { query: { type: "string", description: "Topic to recall" } }, required: ["query"] } } },
+  { type: "function", function: { name: "run_js",
+    description: "Execute JavaScript code for calculations or data processing. Return a value or console.log output.",
+    parameters: { type: "object", properties: { code: { type: "string", description: "JavaScript code to run" } }, required: ["code"] } } }
+];
+const TOOL_IMPLS = { search_web, remember, recall, run_js };
+
+// ---------------- CHAT LOOP ----------------
+async function agentReply() {
+  for (let round = 0; round < CONFIG.maxRounds; round++) {
+    const res = await fetch(CONFIG.baseUrl + "/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.apiKey },
+      body: JSON.stringify({ model: CONFIG.model, messages: messages, tools: TOOLS })
+    });
+    if (!res.ok) throw new Error("API error " + res.status + ": " + (await res.text()).slice(0, 200));
+    const data = await res.json();
+    const msg = data.choices[0].message;
+    if (!msg.tool_calls || msg.tool_calls.length === 0) return msg.content || "(no response)";
+    messages.push(msg);
+    for (const tc of msg.tool_calls) {
+      let args = {};
+      try { args = JSON.parse(tc.function.arguments || "{}"); } catch (e) {}
+      addBubble("tool", "⚙ " + tc.function.name + "(" + (args.query || args.fact || "code") + ")");
+      const fn = TOOL_IMPLS[tc.function.name];
+      const result = fn ? await fn(...[args]) : "Unknown tool";
+      messages.push({ role: "tool", tool_call_id: tc.id, content: String(result).slice(0, 4000) });
+    }
+  }
+  return "(hit tool limit, try asking more directly)";
+}
+
+// ---------------- UI ----------------
+const chatEl = document.getElementById("chat");
+function addBubble(cls, text) {
+  const d = document.createElement("div");
+  d.className = cls === "tool" ? "tool" : cls + " msg";
+  d.textContent = text;
+  chatEl.appendChild(d);
+  chatEl.scrollTop = chatEl.scrollHeight;
+  return d;
+}
+
+let busy = false;
+async function send() {
+  const input = document.getElementById("input");
+  const text = input.value.trim();
+  if (!text || busy) return;
+  busy = true;
+  document.getElementById("send").disabled = true;
+  input.value = "";
+  addBubble("user", text);
+  messages.push({ role: "user", content: text });
+  const think = addBubble("bot", "...");
+  try {
+    const answer = await agentReply();
+    think.remove();
+    addBubble("bot", answer);
+    messages.push({ role: "assistant", content: answer });
+  } catch (e) {
+    think.remove();
+    addBubble("bot", "Error: " + e.message);
+  }
+  busy = false;
+  document.getElementById("send").disabled = false;
+  input.focus();
+}
+document.getElementById("send").onclick = send;
+document.getElementById("input").addEventListener("keydown", e => { if (e.key === "Enter") send(); });
+
+addBubble("bot", "Hi! I'm OMNI. I can search the web, remember things about you, and run code. Ask me anything.");
+</script>
+</body>
+</html>

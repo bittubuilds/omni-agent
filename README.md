@@ -60,3 +60,10 @@ subscription to host Gradio apps, so Streamlit Cloud is the free option.
 
 Add tools by defining a function + schema in `omni_core.py` and registering it in
 `TOOL_IMPLS` / `TOOL_SCHEMAS`. That's the path to a "do anything" agent.
+
+## Browser edition (HF static Space) - deployed
+
+`static/index.html` is a fully self-contained browser agent (no server needed):
+chat + tool loop runs client-side on Groq's API, search via DuckDuckGo/Wikipedia
+APIs, memory in localStorage, code execution in JavaScript. It powers the private
+HF Space. The API key lives only in the Space, never in this repo.
