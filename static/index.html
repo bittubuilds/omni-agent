@@ -374,7 +374,7 @@ const SYSTEM_PROMPT =
   "- User gives a goal/plan/todo: create tasks with add_task, and mark done with complete_task when finished. " +
   "- Calculations or data: run_js with JavaScript. " +
   "Write code in any language. Use markdown, code blocks with language tags. " +
-  "CRITICAL LANGUAGE RULE: ALWAYS reply in the exact same language and script as the user's last message. English question -> English answer. Hinglish -> Hinglish. Pure Hindi -> pure Hindi. Marathi -> Marathi. Any language on Earth -> that same language. Never switch unless the user switches. Your search_web tool WORKS and returns real live results - always use it for current info, news, prices, facts. If a search returns no results, retry once with simpler keywords. Think step by step.";
+  "CRITICAL LANGUAGE RULE: ALWAYS reply in the exact same language and script as the user's last message. English question -> English answer. Hinglish -> Hinglish. Pure Hindi -> pure Hindi. Marathi -> Marathi. Any language on Earth -> that same language. Never switch unless the user switches. Your search_web tool WORKS and queries multiple live sources in parallel (web search, global news via GDELT, tech news via Hacker News, encyclopedia). Always use it for current info, news, prices, facts. Pass ENGLISH keywords even if the user speaks another language. If a search returns no results, retry once with simpler keywords. Think step by step.";
 
 let messages = [{ role: "system", content: SYSTEM_PROMPT }];
 
@@ -414,40 +414,71 @@ if (!apiKey) document.getElementById("setup").style.display = "flex";
 // ---------------- TOOLS ----------------
 async function search_web(query) {
   const out = [];
-  // 1) Real DuckDuckGo results via jina reader proxy (CORS-friendly)
-  try {
-    const r = await fetch("https://r.jina.ai/https://html.duckduckgo.com/html/?q=" + encodeURIComponent(query), { timeout: 15000 });
-    if (r.ok) {
+  const seen = new Set();
+  const push = (line) => { const k = line.slice(0, 70); if (!seen.has(k)) { seen.add(k); out.push(line); } };
+  const isNews = /news|aaj|latest|today|khabar|headline|update|samachar|taaza|2026|2025/i.test(query);
+  const isTech = /\b(ai|llm|gpt|tech|software|startup|robot|open source|model|chip|cyber)\b/i.test(query);
+
+  async function jinaDDG() {
+    try {
+      const r = await fetch("https://r.jina.ai/https://html.duckduckgo.com/html/?q=" + encodeURIComponent(query), { signal: AbortSignal.timeout(15000) });
+      if (!r.ok) return;
       const md = await r.text();
       const re = /\[([^\]]{4,120})\]\(https:\/\/duckduckgo\.com\/l\/\?uddg=([^)&]+)/g;
       let m, n = 0;
       while ((m = re.exec(md)) && n < 6) {
         const url = decodeURIComponent(m[2]);
         const title = m[1].replace(/\[Image[^\]]*\]/g, "").trim();
-        if (title && url.startsWith("http") && !out.some(o => o.includes(title))) {
-          out.push("- " + title + " (" + url + ")");
-          n++;
-        }
+        if (title && url.startsWith("http")) { push("- " + title + " (" + url + ")"); n++; }
       }
-    }
-  } catch (e) {}
-  if (out.length >= 3) return out.join("\n");
-  // 2) DuckDuckGo Instant Answers
-  try {
-    const r = await fetch("https://api.duckduckgo.com/?q=" + encodeURIComponent(query) + "&format=json&no_html=1&skip_disambig=1");
-    const d = await r.json();
-    if (d.AbstractText) out.push("- " + d.Heading + ": " + d.AbstractText + " (" + d.AbstractURL + ")");
-    (d.RelatedTopics || []).slice(0, 4).forEach(t => { if (t.Text) out.push("- " + t.Text + " (" + t.FirstURL + ")"); });
-  } catch (e) {}
-  // 3) Wikipedia
-  try {
-    const r2 = await fetch("https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=" +
-      encodeURIComponent(query) + "&format=json&origin=*&srlimit=4");
-    const d2 = await r2.json();
-    (d2.query.search || []).forEach(s => out.push("- " + s.title + " (https://en.wikipedia.org/wiki/" +
-      encodeURIComponent(s.title.replace(/ /g, "_")) + "): " + s.snippet.replace(/<[^>]+>/g, "")));
-  } catch (e) {}
-  return out.length ? out.join("\n") : "No results found. Try different words.";
+    } catch (e) {}
+  }
+
+  async function gdeltNews() {
+    try {
+      const r = await fetch("https://api.gdeltproject.org/api/v2/doc/doc?query=" + encodeURIComponent(query) + "&mode=artlist&maxrecords=6&sort=datedesc&format=json", { signal: AbortSignal.timeout(25000) });
+      if (!r.ok) return;
+      const d = await r.json();
+      (d.articles || []).slice(0, 6).forEach(a => {
+        if (a.title && a.url) push("- " + String(a.title).trim() + " (" + a.url + ") [" + (a.seendate || "") + "]");
+      });
+    } catch (e) {}
+  }
+
+  async function hackerNews() {
+    try {
+      const r = await fetch("https://hn.algolia.com/api/v1/search?query=" + encodeURIComponent(query) + "&tags=story&hitsPerPage=4", { signal: AbortSignal.timeout(12000) });
+      if (!r.ok) return;
+      const d = await r.json();
+      (d.hits || []).forEach(h => {
+        const url = h.url || ("https://news.ycombinator.com/item?id=" + h.objectID);
+        if (h.title) push("- " + h.title + " (" + url + ") [" + (h.points || 0) + " pts, " + (h.num_comments || 0) + " comments]");
+      });
+    } catch (e) {}
+  }
+
+  async function ddgInstant() {
+    try {
+      const r = await fetch("https://api.duckduckgo.com/?q=" + encodeURIComponent(query) + "&format=json&no_html=1&skip_disambig=1");
+      const d = await r.json();
+      if (d.AbstractText) push("- " + d.Heading + ": " + d.AbstractText + " (" + d.AbstractURL + ")");
+      (d.RelatedTopics || []).slice(0, 4).forEach(t => { if (t.Text) push("- " + t.Text + " (" + t.FirstURL + ")"); });
+    } catch (e) {}
+  }
+
+  async function wiki() {
+    try {
+      const r2 = await fetch("https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=" + encodeURIComponent(query) + "&format=json&origin=*&srlimit=4");
+      const d2 = await r2.json();
+      (d2.query.search || []).forEach(s => push("- " + s.title + " (https://en.wikipedia.org/wiki/" + encodeURIComponent(s.title.replace(/ /g, "_")) + "): " + s.snippet.replace(/<[^>]+>/g, "")));
+    } catch (e) {}
+  }
+
+  const jobs = [jinaDDG(), ddgInstant(), wiki()];
+  if (isNews) jobs.push(gdeltNews());
+  if (isNews || isTech) jobs.push(hackerNews());
+  await Promise.all(jobs);
+  return out.length ? out.slice(0, 12).join("\n") : "No results found. Try different words.";
 }
 
 async function weather(city) {
