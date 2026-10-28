@@ -949,6 +949,9 @@ function setView(v) {
       '<h2 style="margin-top:16px">REDDIT</h2>' +
       '<div class="sub">1. reddit.com/prefs/apps -> "create app" -> type: web app<br>2. redirect uri me EXACTLY ye daalo:<br><b style="color:#fff;user-select:all">' + decodeURIComponent(redirect) + '</b><br>3. client_id (app ke neeche chhota code) + secret neeche daalo.</div>' +
       '<input type="text" id="rdcid" placeholder="Client ID" value="' + (rd ? rd.cid : "") + '">' +
+      '<div style="border:1px dashed var(--line2);padding:8px 10px;font-size:.72rem;color:var(--dim);margin:6px 0;line-height:1.6">' +
+      'PAGE NAHI KHUL RAHA? <br>1. Pehle reddit.com pe LOGIN karo. <br>2. Chrome menu (⋮) me <b style="color:#fff">"Desktop site"</b> ON karo. <br>3. Phir ye button dabao (ya address bar me <b style="color:#fff">old.reddit.com/prefs/apps</b> likho). <br>4. Agar app khul jaye to browser me wapas aao - "use Reddit in browser" choose karo.</div>' +
+      '<button class="mprimary" style="background:transparent;border:1px solid #661111;color:#ff8888" onclick="window.open(\'https://www.reddit.com/prefs/apps/\',\'_blank\')">OPEN REDDIT APP CONSOLE</button>' +
       '<input type="text" id="rdsecret" placeholder="Secret" value="' + (rd ? rd.secret : "") + '">' +
       '<input type="text" id="rdsub" placeholder="Subreddit name (no r/)" value="' + (rd ? rd.sub : "") + '">' +
       '<button class="mprimary" onclick="connectReddit()">CONNECT REDDIT</button>' +
