@@ -115,7 +115,7 @@ function show(el){["s1","s2","s3","s4"].forEach(s=>$(s).classList.add("hidden"))
 function again(){show("s2");}
 function reset(){location.reload();}
 async function createMyVideo(){
-  const key=localStorage.getItem("ultron_groq_key");
+  const key=localStorage.getItem("omni_groq_key")||localStorage.getItem("ultron_groq_key");
   if(!key){fail("Groq key nahi mili. ULTRON app (index.html) me ek baar key daalo, phir wapas aao.");return;}
   if(!vid.src){fail("Pehle video add karo.");return;}
   $("createbtn").disabled=true;show("s3");$("errbox").classList.add("hidden");
