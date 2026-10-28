@@ -4,29 +4,52 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OMNI - Free AI Agent</title>
+<script src="https://cdn.jsdelivr.net/npm/marked@12/lib/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
 <style>
-  :root { --bg:#0f1117; --card:#1a1d29; --text:#e8eaf2; --muted:#8b91a7; --accent:#6c5ce7; }
+  :root { --bg:#0f1117; --card:#1a1d29; --text:#e8eaf2; --muted:#8b91a7; --accent:#6c5ce7; --border:#2a2e3f; }
   * { box-sizing:border-box; margin:0; padding:0; }
-  body { font-family:system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; }
-  header { padding:14px 18px; background:var(--card); border-bottom:1px solid #2a2e3f; display:flex; justify-content:space-between; align-items:center; }
-  header h1 { font-size:1.1rem; }
-  header p { font-size:.75rem; color:var(--muted); }
-  #chat { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; }
-  .msg { max-width:85%; padding:10px 14px; border-radius:14px; white-space:pre-wrap; word-break:break-word; line-height:1.45; }
-  .user { align-self:flex-end; background:var(--accent); color:#fff; border-bottom-right-radius:4px; }
+  body { font-family:system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+  header { padding:12px 14px; background:var(--card); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  header h1 { font-size:1.05rem; }
+  header p { font-size:.72rem; color:var(--muted); }
+  .hbtns { display:flex; gap:6px; }
+  .hbtn { background:transparent; border:1px solid var(--border); color:var(--text); border-radius:9px; padding:7px 10px; font-size:1rem; cursor:pointer; }
+  .hbtn.on { background:var(--accent); border-color:var(--accent); }
+  #chat { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px; }
+  .msg { max-width:88%; padding:11px 14px; border-radius:14px; line-height:1.5; word-break:break-word; }
+  .user { align-self:flex-end; background:var(--accent); color:#fff; border-bottom-right-radius:4px; white-space:pre-wrap; }
   .bot { align-self:flex-start; background:var(--card); border-bottom-left-radius:4px; }
-  .tool { align-self:flex-start; font-size:.7rem; color:var(--muted); font-style:italic; }
-  #inputbar { display:flex; gap:8px; padding:12px; background:var(--card); border-top:1px solid #2a2e3f; }
-  #input { flex:1; padding:12px 16px; border-radius:22px; border:1px solid #2a2e3f; background:var(--bg); color:var(--text); font-size:1rem; outline:none; }
-  #send { padding:12px 20px; border-radius:22px; border:none; background:var(--accent); color:#fff; font-size:1rem; cursor:pointer; }
-  #send:disabled { opacity:.5; }
-  #setup { position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; padding:20px; z-index:10; }
-  .setupcard { background:var(--card); border:1px solid #2a2e3f; border-radius:16px; padding:28px; max-width:420px; width:100%; }
+  .bot pre { background:#0c0e14; border:1px solid var(--border); border-radius:8px; padding:10px; overflow-x:auto; margin:8px 0; position:relative; }
+  .bot code { font-family:ui-monospace,Consolas,monospace; font-size:.85em; }
+  .bot p code, .bot li code { background:#0c0e14; padding:1px 5px; border-radius:4px; }
+  .bot table { border-collapse:collapse; margin:8px 0; }
+  .bot th, .bot td { border:1px solid var(--border); padding:5px 9px; font-size:.9em; }
+  .tool { align-self:flex-start; font-size:.72rem; color:var(--muted); font-style:italic; }
+  .copybtn { position:absolute; top:5px; right:5px; background:var(--border); color:var(--muted); border:none; border-radius:6px; font-size:.7rem; padding:3px 7px; cursor:pointer; }
+  .genimg { max-width:70%; border-radius:12px; align-self:flex-start; border:1px solid var(--border); }
+  #inputbar { display:flex; gap:8px; padding:10px; background:var(--card); border-top:1px solid var(--border); align-items:center; }
+  #input { flex:1; padding:12px 16px; border-radius:22px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:1rem; outline:none; max-height:120px; resize:none; }
+  #inputbar .btn { width:44px; height:44px; border-radius:50%; border:none; background:var(--accent); color:#fff; font-size:1.1rem; cursor:pointer; flex-shrink:0; }
+  #inputbar .btn.rec { background:#e74c3c; animation:pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity:.5; } }
+  #inputbar .btn.sec { background:transparent; border:1px solid var(--border); color:var(--text); }
+  #menu { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:20; display:none; }
+  #menupanel { position:absolute; top:0; left:0; bottom:0; width:min(320px,85%); background:var(--card); border-right:1px solid var(--border); padding:16px; overflow-y:auto; }
+  #menu h3 { font-size:.85rem; color:var(--muted); margin:14px 0 8px; text-transform:uppercase; letter-spacing:.05em; }
+  .mitem { display:block; width:100%; text-align:left; background:transparent; border:none; color:var(--text); padding:9px 10px; border-radius:8px; cursor:pointer; font-size:.9rem; }
+  .mitem:hover, .mitem.active { background:var(--bg); }
+  .memitem { display:flex; justify-content:space-between; gap:8px; align-items:flex-start; background:var(--bg); border-radius:8px; padding:8px 10px; margin-bottom:6px; font-size:.82rem; }
+  .memitem button { background:transparent; border:none; color:#e74c3c; cursor:pointer; font-size:.85rem; }
+  .mprimary { display:block; width:100%; background:var(--accent); color:#fff; border:none; border-radius:9px; padding:10px; font-size:.9rem; cursor:pointer; margin-top:6px; }
+  #setup { position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; padding:20px; z-index:30; }
+  .setupcard { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:28px; max-width:420px; width:100%; }
   .setupcard h2 { font-size:1.15rem; margin-bottom:10px; }
   .setupcard p { font-size:.85rem; color:var(--muted); line-height:1.5; margin-bottom:16px; }
-  .setupcard input { width:100%; padding:12px 14px; border-radius:10px; border:1px solid #2a2e3f; background:var(--bg); color:var(--text); font-size:.95rem; margin-bottom:12px; outline:none; }
+  .setupcard input { width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:.95rem; margin-bottom:12px; outline:none; }
   .setupcard button { width:100%; padding:12px; border:none; border-radius:10px; background:var(--accent); color:#fff; font-size:1rem; cursor:pointer; }
-  #keybtn { background:transparent; border:1px solid #2a2e3f; color:var(--muted); border-radius:8px; padding:6px 10px; font-size:.8rem; cursor:pointer; }
+  .empty { text-align:center; color:var(--muted); padding:30px; font-size:.85rem; }
+  .sug { display:inline-block; background:var(--card); border:1px solid var(--border); color:var(--text); border-radius:16px; padding:7px 12px; font-size:.8rem; margin:3px; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -34,94 +57,108 @@
   <div class="setupcard">
     <h2>🔑 One-time setup</h2>
     <p>Paste your Groq API key below (free at <b>console.groq.com</b> &rarr; API Keys).<br>
-    It is saved only in your own browser, never on any server.<br>
-    You only do this once.</p>
+    Saved only in your browser, never on any server. You only do this once.</p>
     <input id="keyinput" type="password" placeholder="gsk_..." autocomplete="off">
     <p id="keystatus" style="display:none; font-size:.8rem; margin-bottom:10px;"></p>
     <button id="savebtn" onclick="saveKey()">Save &amp; Start</button>
   </div>
 </div>
+
 <header>
   <div>
-    <h1>OMNI - Free AI Agent</h1>
-    <p>Searches the web · Remembers facts · Runs code. Free forever.</p>
+    <h1>OMNI <span style="font-size:.7rem;color:var(--muted)">v2</span></h1>
+    <p id="statusline">Search · Memory · Code · Images · Weather · Voice</p>
   </div>
-  <button id="keybtn" onclick="changeKey()">🔑 key</button>
+  <div class="hbtns">
+    <button class="hbtn" id="ttsbtn" onclick="toggleTts()" title="Voice replies">🔇</button>
+    <button class="hbtn" onclick="document.getElementById('fileinput').click()" title="Attach text file">📎</button>
+    <button class="hbtn" onclick="toggleMenu()" title="Menu">☰</button>
+  </div>
 </header>
+<input type="file" id="fileinput" accept=".txt,.md,.csv,.json,.py,.js,.html,.css,.java,.c,.cpp,.xml,.log" style="display:none">
+
+<div id="menu">
+  <div id="menupanel">
+    <button class="mprimary" onclick="newChat()">＋ New chat</button>
+    <h3>Chats</h3>
+    <div id="chatlist"></div>
+    <h3>Memory</h3>
+    <div id="memlist"></div>
+    <h3>Settings</h3>
+    <button class="mitem" onclick="changeKey()">🔑 Change API key</button>
+    <button class="mitem" onclick="toggleTts();">🔊 Voice replies: <span id="ttsstate">off</span></button>
+    <button class="mitem" onclick="micLang='hi-IN'; alert('Voice input language: Hindi + English');">🎤 Voice input: Hindi</button>
+    <button class="mitem" onclick="micLang='en-IN'; alert('Voice input language: English (India)');">🎤 Voice input: English</button>
+    <p style="font-size:.7rem;color:var(--muted);margin-top:16px;line-height:1.5">OMNI v2 · Groq GPT-OSS-120B · DuckDuckGo + Wikipedia search · Pollinations images · Open-Meteo weather · free forever</p>
+  </div>
+</div>
+
 <div id="chat"></div>
 <div id="inputbar">
-  <input id="input" placeholder="Ask OMNI anything..." autocomplete="off">
-  <button id="send">➤</button>
+  <button class="btn sec" id="micbtn" onclick="toggleMic()" title="Speak">🎤</button>
+  <textarea id="input" rows="1" placeholder="Ask OMNI anything..." autocomplete="off"></textarea>
+  <button class="btn" id="send" onclick="send()">➤</button>
 </div>
+
 <script>
-const CONFIG = {
-  baseUrl: "https://api.groq.com/openai/v1",
-  model: "openai/gpt-oss-120b",
-  maxRounds: 8
-};
+const CONFIG = { baseUrl: "https://api.groq.com/openai/v1", model: "openai/gpt-oss-120b", maxRounds: 10 };
 const KEYSTORE = "omni_groq_key";
 let apiKey = localStorage.getItem(KEYSTORE) || "";
+let ttsOn = false;
+let micLang = "hi-IN";
+let recognizing = false;
+let chatId = localStorage.getItem("omni_current_chat") || "";
 
+const SYSTEM_PROMPT =
+  "You are OMNI, a powerful general-purpose AI agent. You help the user with ANY task. " +
+  "You have real tools. Use them actively: " +
+  "- Needs current facts or news? call search_web first. " +
+  "- Current weather for any city? call weather. " +
+  "- User wants an image made? call generate_image with a detailed English prompt. " +
+  "- Something worth keeping (preferences, facts, projects)? call remember. " +
+  "- Need past context? call recall. " +
+  "- Calculations or data processing? call run_js with JavaScript code. " +
+  "You can write code in any language as output. Use markdown for structure and code blocks with language tags. " +
+  "Reply in the language the user uses (Hindi, Hinglish or English). Think step by step.";
+
+let messages = [{ role: "system", content: SYSTEM_PROMPT }];
+
+// ---------------- SETUP ----------------
 async function saveKey() {
   const el = document.getElementById("keyinput");
   const st = document.getElementById("keystatus");
   const btn = document.getElementById("savebtn");
   let v = el.value.trim().replace(/^Bearer\s+/i, "");
   if (!v.startsWith("gsk_")) {
-    st.style.display = "block";
-    st.style.color = "#ff6b6b";
-    st.textContent = "That doesn't look like a Groq key. It starts with gsk_ - copy it exactly, no extra spaces.";
+    st.style.display = "block"; st.style.color = "#ff6b6b";
+    st.textContent = "Groq keys start with gsk_ - copy it exactly from console.groq.com.";
     return;
   }
-  btn.disabled = true;
-  btn.textContent = "Checking key...";
+  btn.disabled = true; btn.textContent = "Checking key...";
   try {
-    const r = await fetch(CONFIG.baseUrl + "/models", {
-      headers: { "Authorization": "Bearer " + v }
-    });
+    const r = await fetch(CONFIG.baseUrl + "/models", { headers: { "Authorization": "Bearer " + v } });
     if (r.ok) {
-      localStorage.setItem(KEYSTORE, v);
-      apiKey = v;
-      st.style.display = "block";
-      st.style.color = "#2ecc71";
-      st.textContent = "Key is valid. Starting...";
-      setTimeout(() => {
-        document.getElementById("setup").style.display = "none";
-        document.getElementById("input").focus();
-      }, 600);
+      localStorage.setItem(KEYSTORE, v); apiKey = v;
+      st.style.display = "block"; st.style.color = "#2ecc71"; st.textContent = "Key is valid. Starting...";
+      setTimeout(() => { document.getElementById("setup").style.display = "none"; renderAll(); }, 600);
     } else if (r.status === 401) {
-      st.style.display = "block";
-      st.style.color = "#ff6b6b";
-      st.textContent = "Groq says this key is invalid or expired. Re-copy it (a new one: console.groq.com -> API Keys -> Create API Key).";
-      btn.disabled = false;
-      btn.textContent = "Save & Start";
-    } else {
-      throw new Error("HTTP " + r.status);
-    }
+      st.style.display = "block"; st.style.color = "#ff6b6b";
+      st.textContent = "Groq says this key is invalid. Create a new one: console.groq.com -> API Keys.";
+      btn.disabled = false; btn.textContent = "Save & Start";
+    } else { throw new Error("HTTP " + r.status); }
   } catch (e) {
-    st.style.display = "block";
-    st.style.color = "#ff6b6b";
-    st.textContent = "Could not check the key (network). Check your internet and try again.";
-    btn.disabled = false;
-    btn.textContent = "Save & Start";
+    st.style.display = "block"; st.style.color = "#ff6b6b";
+    st.textContent = "Network problem. Check internet and try again.";
+    btn.disabled = false; btn.textContent = "Save & Start";
   }
 }
 function changeKey() {
-  document.getElementById("keyinput").value = apiKey;
+  document.getElementById("keyinput").value = "";
+  document.getElementById("keystatus").style.display = "none";
   document.getElementById("setup").style.display = "flex";
+  toggleMenu(false);
 }
 if (!apiKey) { document.getElementById("setup").style.display = "flex"; }
-
-const SYSTEM_PROMPT =
-  "You are OMNI, a general-purpose AI agent. You help the user with ANY task. " +
-  "You have real tools. Use them actively: " +
-  "- When a question needs current facts, call search_web first. " +
-  "- When the user tells you something worth keeping (preferences, facts, projects), call remember. " +
-  "- When past context would help, call recall. " +
-  "- For calculations or data processing, call run_js with JavaScript code. " +
-  "You can also write code in any language as output. Think step by step.";
-
-let messages = [{ role: "system", content: SYSTEM_PROMPT }];
 
 // ---------------- TOOLS ----------------
 async function search_web(query) {
@@ -144,10 +181,34 @@ async function search_web(query) {
   return out.length ? out.join("\n") : "No results found. Try different words.";
 }
 
+async function weather(city) {
+  try {
+    const g = await (await fetch("https://geocoding-api.open-meteo.com/v1/search?count=1&name=" + encodeURIComponent(city))).json();
+    if (!g.results || !g.results.length) return "City not found: " + city;
+    const loc = g.results[0];
+    const w = await (await fetch("https://api.open-meteo.com/v1/forecast?latitude=" + loc.latitude +
+      "&longitude=" + loc.longitude + "&current_weather=true&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto")).json();
+    const c = w.current_weather;
+    return "Weather in " + loc.name + ", " + (loc.country || "") + ": " + c.temperature + "C, wind " +
+      c.windspeed + " km/h, code " + c.weathercode + ". Today: max " + w.daily.temperature_2m_max[0] +
+      "C, min " + w.daily.temperature_2m_min[0] + "C.";
+  } catch (e) { return "Weather lookup failed: " + e.message; }
+}
+
+async function generate_image(prompt) {
+  const url = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) +
+    "?width=768&height=768&nologo=true";
+  const img = document.createElement("img");
+  img.className = "genimg"; img.src = url; img.alt = prompt;
+  img.onload = () => { chatEl.appendChild(img); chatEl.scrollTop = chatEl.scrollHeight; };
+  return "Image generated and displayed to the user: '" + prompt + "'.";
+}
+
 function remember(fact) {
   const mem = JSON.parse(localStorage.getItem("omni_memory") || "[]");
   mem.push({ fact, date: new Date().toISOString() });
   localStorage.setItem("omni_memory", JSON.stringify(mem));
+  renderMemory();
   return "Remembered.";
 }
 
@@ -175,6 +236,12 @@ const TOOLS = [
   { type: "function", function: { name: "search_web",
     description: "Search the internet for current information. Returns results with titles, links, snippets.",
     parameters: { type: "object", properties: { query: { type: "string", description: "What to search for" } }, required: ["query"] } } },
+  { type: "function", function: { name: "weather",
+    description: "Get current weather for any city in the world.",
+    parameters: { type: "object", properties: { city: { type: "string", description: "City name" } }, required: ["city"] } } },
+  { type: "function", function: { name: "generate_image",
+    description: "Generate an image from a text description and show it to the user. Use detailed English prompts.",
+    parameters: { type: "object", properties: { prompt: { type: "string", description: "Detailed description of the image" } }, required: ["prompt"] } } },
   { type: "function", function: { name: "remember",
     description: "Store a fact long-term for recall in later sessions.",
     parameters: { type: "object", properties: { fact: { type: "string", description: "The fact to store" } }, required: ["fact"] } } },
@@ -185,7 +252,7 @@ const TOOLS = [
     description: "Execute JavaScript code for calculations or data processing. Return a value or console.log output.",
     parameters: { type: "object", properties: { code: { type: "string", description: "JavaScript code to run" } }, required: ["code"] } } }
 ];
-const TOOL_IMPLS = { search_web, remember, recall, run_js };
+const TOOL_IMPLS = { search_web, weather, generate_image, remember, recall, run_js };
 
 // ---------------- CHAT LOOP ----------------
 async function agentReply() {
@@ -203,7 +270,8 @@ async function agentReply() {
     for (const tc of msg.tool_calls) {
       let args = {};
       try { args = JSON.parse(tc.function.arguments || "{}"); } catch (e) {}
-      addBubble("tool", "⚙ " + tc.function.name + "(" + (args.query || args.fact || "code") + ")");
+      const hint = args.query || args.city || args.fact || (args.prompt ? args.prompt.slice(0, 40) : "code");
+      addBubble("tool", "⚙ " + tc.function.name + " (" + hint + ")");
       const fn = TOOL_IMPLS[tc.function.name];
       const result = fn ? await fn(...[args]) : "Unknown tool";
       messages.push({ role: "tool", tool_call_id: tc.id, content: String(result).slice(0, 4000) });
@@ -212,17 +280,177 @@ async function agentReply() {
   return "(hit tool limit, try asking more directly)";
 }
 
+// ---------------- CHATS (persistence) ----------------
+function loadChats() { return JSON.parse(localStorage.getItem("omni_chats") || "{}"); }
+function saveChat() {
+  if (messages.length < 2) return;
+  const chats = loadChats();
+  const firstUser = (messages.find(m => m.role === "user") || {}).content || "New chat";
+  chats[chatId] = { title: firstUser.slice(0, 40), updated: Date.now(),
+    messages: messages.filter(m => m.role !== "system") };
+  const ids = Object.keys(chats).sort((a, b) => (chats[b].updated || 0) - (chats[a].updated || 0));
+  if (ids.length > 15) ids.slice(15).forEach(id => delete chats[id]);
+  localStorage.setItem("omni_chats", JSON.stringify(chats));
+  renderChatList();
+}
+function newChat() {
+  messages = [{ role: "system", content: SYSTEM_PROMPT }];
+  chatId = "c" + Date.now();
+  localStorage.setItem("omni_current_chat", chatId);
+  chatEl.innerHTML = "";
+  addBubble("bot", "Naya chat shuru! Kya karna hai?");
+  renderChatList();
+  toggleMenu(false);
+}
+function openChat(id) {
+  const c = loadChats()[id];
+  if (!c) return;
+  chatId = id;
+  localStorage.setItem("omni_current_chat", id);
+  messages = [{ role: "system", content: SYSTEM_PROMPT }].concat(c.messages);
+  chatEl.innerHTML = "";
+  for (const m of c.messages) if (m.role === "user" || m.role === "assistant") addBubble(m.role === "user" ? "user" : "bot", m.content, true);
+  toggleMenu(false);
+}
+function renderChatList() {
+  const el = document.getElementById("chatlist");
+  el.innerHTML = "";
+  const chats = loadChats();
+  const ids = Object.keys(chats).sort((a, b) => (chats[b].updated || 0) - (chats[a].updated || 0));
+  if (!ids.length) { el.innerHTML = '<p class="empty">No saved chats</p>'; return; }
+  ids.forEach(id => {
+    const b = document.createElement("button");
+    b.className = "mitem" + (id === chatId ? " active" : "");
+    b.textContent = "💬 " + chats[id].title;
+    b.onclick = () => openChat(id);
+    el.appendChild(b);
+  });
+}
+
+// ---------------- MEMORY UI ----------------
+function renderMemory() {
+  const el = document.getElementById("memlist");
+  el.innerHTML = "";
+  const mem = JSON.parse(localStorage.getItem("omni_memory") || "[]");
+  if (!mem.length) { el.innerHTML = '<p class="empty">Kuch yaad nahi hai</p>'; return; }
+  mem.forEach((m, i) => {
+    const d = document.createElement("div");
+    d.className = "memitem";
+    const s = document.createElement("span"); s.textContent = m.fact;
+    const x = document.createElement("button"); x.textContent = "✕";
+    x.onclick = () => { mem.splice(i, 1); localStorage.setItem("omni_memory", JSON.stringify(mem)); renderMemory(); };
+    d.appendChild(s); d.appendChild(x);
+    el.appendChild(d);
+  });
+}
+
 // ---------------- UI ----------------
 const chatEl = document.getElementById("chat");
-function addBubble(cls, text) {
+function renderMarkdown(text) {
+  try { return DOMPurify.sanitize(marked.parse(text)); }
+  catch (e) { const t = document.createElement("div"); t.textContent = text; return t.innerHTML; }
+}
+function addBubble(cls, text, rawUser) {
   const d = document.createElement("div");
-  d.className = cls === "tool" ? "tool" : cls + " msg";
-  d.textContent = text;
+  if (cls === "tool") { d.className = "tool"; d.textContent = text; }
+  else {
+    d.className = cls + " msg";
+    if (cls === "user" || rawUser) { d.textContent = text; }
+    else {
+      d.innerHTML = renderMarkdown(text);
+      const pre = d.querySelectorAll("pre");
+      pre.forEach(p => {
+        const b = document.createElement("button");
+        b.className = "copybtn"; b.textContent = "copy";
+        b.onclick = () => { navigator.clipboard.writeText(p.innerText); b.textContent = "copied"; setTimeout(() => b.textContent = "copy", 1200); };
+        p.appendChild(b);
+      });
+    }
+  }
   chatEl.appendChild(d);
   chatEl.scrollTop = chatEl.scrollHeight;
   return d;
 }
+function renderAll() {
+  chatEl.innerHTML = "";
+  if (messages.length <= 1) {
+    const w = document.createElement("div");
+    w.className = "empty";
+    w.innerHTML = "Try:<br>" +
+      '<span class="sug" onclick="quick(this)">aaj ki AI news search karo</span>' +
+      '<span class="sug" onclick="quick(this)">Delhi ka mausam batao</span>' +
+      '<span class="sug" onclick="quick(this)">ek tiger ki image banao</span>' +
+      '<span class="sug" onclick="quick(this)">yaad rakho mera naam Bittu hai</span>' +
+      '<span class="sug" onclick="quick(this)">Python me snake game ka code do</span>';
+    chatEl.appendChild(w);
+  } else {
+    for (const m of messages) if (m.role === "user" || m.role === "assistant") addBubble(m.role === "user" ? "user" : "bot", m.content, m.role === "user");
+  }
+  renderChatList(); renderMemory();
+}
+function quick(el) { document.getElementById("input").value = el.textContent; send(); }
 
+function toggleMenu(force) {
+  const m = document.getElementById("menu");
+  const show = force !== undefined ? force : m.style.display !== "block";
+  m.style.display = show ? "block" : "none";
+  if (show) { renderChatList(); renderMemory(); }
+}
+function toggleTts() {
+  ttsOn = !ttsOn;
+  document.getElementById("ttsbtn").textContent = ttsOn ? "🔊" : "🔇";
+  document.getElementById("ttsbtn").classList.toggle("on", ttsOn);
+  const st = document.getElementById("ttsstate"); if (st) st.textContent = ttsOn ? "on" : "off";
+}
+function speak(text) {
+  if (!ttsOn || !window.speechSynthesis) return;
+  const u = new SpeechSynthesisUtterance(text.replace(/[#*`_~]/g, "").slice(0, 600));
+  u.lang = micLang; u.rate = 1.02;
+  speechSynthesis.speak(u);
+}
+
+// ---------------- VOICE INPUT ----------------
+let recog = null;
+function toggleMic() {
+  if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
+    alert("Voice input works in Chrome browser. Please use Chrome.");
+    return;
+  }
+  if (recognizing) { recog.stop(); return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recog = new SR();
+  recog.lang = micLang; recog.interimResults = false; recog.continuous = false;
+  recog.onstart = () => { recognizing = true; document.getElementById("micbtn").classList.add("rec"); };
+  recog.onend = () => { recognizing = false; document.getElementById("micbtn").classList.remove("rec"); };
+  recog.onresult = (e) => {
+    const t = e.results[0][0].transcript;
+    document.getElementById("input").value = t;
+    send();
+  };
+  recog.onerror = () => { recognizing = false; document.getElementById("micbtn").classList.remove("rec"); };
+  recog.start();
+}
+
+// ---------------- FILE ATTACH ----------------
+document.getElementById("fileinput").addEventListener("change", async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  if (f.size > 300000) { alert("File badi hai (max 300KB text files)."); return; }
+  const text = await f.text();
+  messages.push({ role: "user", content: "I am attaching a file: " + f.name + "\n\n" + text.slice(0, 60000) });
+  addBubble("user", "📎 " + f.name + " attach kiya. poochho iske baare me kuch bhi.");
+  e.target.value = "";
+  const think = addBubble("bot", "...");
+  try {
+    const answer = await agentReply();
+    think.remove();
+    addBubble("bot", answer);
+    messages.push({ role: "assistant", content: answer });
+    saveChat(); speak(answer);
+  } catch (err) { think.remove(); addBubble("bot", "Error: " + err.message); }
+});
+
+// ---------------- SEND ----------------
 let busy = false;
 async function send() {
   if (!apiKey) { changeKey(); return; }
@@ -240,6 +468,7 @@ async function send() {
     think.remove();
     addBubble("bot", answer);
     messages.push({ role: "assistant", content: answer });
+    saveChat(); speak(answer);
   } catch (e) {
     think.remove();
     addBubble("bot", "Error: " + e.message);
@@ -248,10 +477,16 @@ async function send() {
   document.getElementById("send").disabled = false;
   input.focus();
 }
-document.getElementById("send").onclick = send;
-document.getElementById("input").addEventListener("keydown", e => { if (e.key === "Enter") send(); });
+document.getElementById("input").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+});
+document.getElementById("menu").addEventListener("click", e => { if (e.target.id === "menu") toggleMenu(false); });
 
-addBubble("bot", "Hi! I'm OMNI. I can search the web, remember things about you, and run code. Ask me anything.");
+if (!chatId) chatId = "c" + Date.now();
+localStorage.setItem("omni_current_chat", chatId);
+const saved = loadChats()[chatId];
+if (saved && saved.messages && saved.messages.length) messages = [{ role: "system", content: SYSTEM_PROMPT }].concat(saved.messages);
+renderAll();
 </script>
 </body>
 </html>

@@ -67,3 +67,14 @@ Add tools by defining a function + schema in `omni_core.py` and registering it i
 chat + tool loop runs client-side on Groq's API, search via DuckDuckGo/Wikipedia
 APIs, memory in localStorage, code execution in JavaScript. It powers the private
 HF Space. The API key lives only in the Space, never in this repo.
+
+## OMNI v2 (browser edition) features
+
+- Live web search (DuckDuckGo + Wikipedia)
+- Weather for any city (Open-Meteo, keyless)
+- AI image generation (Pollinations, keyless)
+- Long-term memory + memory manager (view/delete in menu)
+- Runs JavaScript (calculations, data processing)
+- Voice input (mic, Hindi/English) and voice replies
+- Attach text/code/CSV/JSON files and ask about them
+- Saved chat history (last 15 chats), markdown answers with copy buttons
