@@ -54,6 +54,18 @@ footer{text-align:center;color:var(--dim);font-size:.7rem;letter-spacing:2px;pad
 <button class="btn small" onclick="previewCut()">PREVIEW CUT</button></div>
 <div class="status" id="cutinfo"></div></div>
 
+<div class="card"><h3>&#129302; AI AUTO-EDIT ( AUTEUR MODE )</h3>
+<div class="row"><input type="text" id="aiprompt" placeholder="Prompt: 'glitch style, bold yellow captions, hook = first line, city night b-roll, best 30 sec'" style="flex:1;min-width:150px">
+<select id="aistyle" onchange="if(this.value){document.getElementById('aiprompt').value=this.value;this.value='';}">
+<option value="">STYLE...</option>
+<option value="Glitch style edit: bold white captions with red glow, glitch feel, hook title on first line, futuristic city b-roll, keep strongest 30 seconds">GLITCH</option>
+<option value="Minimal clean edit: subtle small white captions bottom, one elegant b-roll, natural colors, keep it tight">MINIMAL</option>
+<option value="Kinetic type edit: big bold yellow center captions, punchy energy, dynamic b-roll every few seconds, fast pace">KINETIC TYPE</option>
+<option value="Breaking news style: red bold captions, urgent tone, dramatic b-roll, hook title top">BREAKING NEWS</option></select>
+<button class="btn primary" id="aibtn" onclick="autoEdit()">&#127912; AUTO-EDIT</button></div>
+<div class="bar"><div id="aibar"></div></div>
+<div class="status" id="aistatus">Prompt likho - AI khud transcript padhega, plan banayega, captions/b-roll/text/filter sab apply karega. Phir PREVIEW aur EXPORT.</div></div>
+
 <div class="card"><h3>&#128172; AUTO CAPTIONS (Whisper AI)</h3>
 <div class="row"><button class="btn primary" id="capbtn" onclick="genCaptions()">&#127908; GENERATE CAPTIONS</button>
 <label>Size</label><input type="range" id="capsize" min="18" max="60" value="34" oninput="capSize=this.value">
@@ -98,7 +110,7 @@ const $=id=>document.getElementById(id);
 const v=document.createElement("video"); v.crossOrigin="anonymous"; v.muted=false;
 const music=document.createElement("audio");
 const stage=$("stage"),ctx=stage.getContext("2d");
-let trimS=0,trimE=0,muteOrig=false,capSize=34,capColor="#fff",capPos="bottom",capsOn=true,caps=[],capsBusy=false;
+let trimS=0,trimE=0,muteOrig=false,capSize=34,capColor="#fff",capPos="bottom",capsOn=true,caps=[],capsBusy=false,rawCaps=[];
 let mGain=null,vidGain=null,actx=null,recNode=null;
 let overlays=[],fB=100,fC=100,fS=100,fBW=false,exporting=false;
 
@@ -173,13 +185,8 @@ async function genCaptions(){
     const r=await fetch("https://api.groq.com/openai/v1/audio/transcriptions",{method:"POST",headers:{Authorization:"Bearer "+key},body:fd});
     if(!r.ok){throw new Error((await r.text()).slice(0,160));}
     const d=await r.json();
-    const spd=+($("speedsel").value)||1;
-    caps=(d.segments||[]).map(s=>({
-      from:Math.max(0,(s.start-trimS)/spd),
-      to:Math.max(0,(s.end-trimS)/spd),
-      text:(s.text||"").trim()
-    })).filter(s=>s.to>0&&s.from<(trimE-trimS)/spd);
-    renderCapsList();
+    rawCaps=(d.segments||[]).map(s=>({from:s.start,to:s.end,text:(s.text||"").trim()}));
+    remapCaps();
     $("capbar").style.width="100%";
     $("capstatus").innerHTML="<b class='ok'>&#10004; "+caps.length+" captions ready!</b> Preview/Export me dikhenge. ON/OFF se toggle.";
   }catch(e){
@@ -257,6 +264,66 @@ function drawCaps(t,dur){
 /* ---------------- B-ROLL / MOTION ---------------- */
 $("bfile").onchange=e=>{const f=e.target.files[0];if(!f)return;
   const img=new Image();img.onload=()=>addOverlay(img,f.name.slice(0,18));img.src=URL.createObjectURL(f);};
+function remapCaps(){
+  const spd=+($("speedsel").value)||1;
+  caps=rawCaps.map(s=>({from:Math.max(0,(s.from-trimS)/spd),to:Math.max(0,(s.to-trimS)/spd),text:s.text})).filter(s=>s.to>0&&s.from<(trimE-trimS)/spd);
+  renderCapsList();
+}
+async function addBroll(prompt,from,to,fx){
+  const r=await fetch("https://image.pollinations.ai/prompt/"+encodeURIComponent(prompt+", cinematic, high quality")+"?width=1280&height=720&nologo=true&seed="+Math.floor(Math.random()*99999));
+  const blob=await r.blob();
+  const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=URL.createObjectURL(blob);});
+  addOverlay(img,prompt.slice(0,18));
+  const o=overlays[overlays.length-1];o.from=from;o.to=to;if(fx)o.fx=fx;
+  renderOvrs();
+}
+async function autoEdit(){
+  if(!v.src){alert("Pehle video load karo");return;}
+  const key=localStorage.getItem("ultron_groq_key");
+  if(!key){alert("Groq key ULTRON app me daalo (ek baar)");return;}
+  const p=$("aiprompt").value.trim();
+  if(!p){alert("Prompt likho ya STYLE choose karo");return;}
+  $("aibtn").disabled=true;$("aibar").style.width="10%";
+  try{
+    $("aistatus").innerHTML="Step 1/4: Transcript (Whisper)...";
+    if(!rawCaps.length){await genCaptions();}
+    $("aibar").style.width="40%";
+    $("aistatus").innerHTML="Step 2/4: AUTEUR plan (Groq)...";
+    const tr=rawCaps.map(s=>"["+s.from.toFixed(1)+"-"+s.to.toFixed(1)+"s] "+s.text).join("\n").slice(0,6000);
+    const sys="You are AUTEUR, an expert AI reel editor. You get a video transcript (with file-timeline timestamps) and edit instructions. Return ONLY valid JSON, no other text, schema: {\"hook\":string,\"hook_anim\":\"fade\"|\"slide\"|\"pop\"|\"type\"|\"none\",\"trim\":{\"start\":number|null,\"end\":number|null},\"speed\":0.5|1|1.5|2,\"captions\":{\"size\":18-60,\"color\":\"#fff\"|\"#ff4444\"|\"#ffe600\"|\"#00e5ff\",\"pos\":\"bottom\"|\"center\"|\"top\"},\"filters\":{\"brightness\":number,\"contrast\":number,\"sat\":number,\"bw\":boolean},\"overlays\":array up to 3 {\"prompt\":string,\"from\":number,\"to\":number,\"fx\":\"cover\"|\"fade\"|\"pip\"},\"notes\":short Hinglish summary}. Rules: trim drops weak intros/fillers and keeps the strongest hook-to-payoff section (max ~60 seconds for reels). overlays visualize key moments using from/to in ORIGINAL file timeline. Instructions: ";
+    const r=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+key},body:JSON.stringify({model:"openai/gpt-oss-120b",response_format:{type:"json_object"},messages:[{role:"system",content:sys+p},{role:"user",content:"Video duration: "+v.duration.toFixed(1)+"s. Transcript:\n"+(tr||"(no speech - plan visuals only)")}],temperature:0.7})});
+    if(!r.ok)throw new Error((await r.text()).slice(0,160));
+    const d=await r.json();
+    let plan;try{plan=JSON.parse(d.choices[0].message.content);}catch(e){const m=(d.choices[0].message.content||"").match(/\{[\s\S]*\}/);if(!m)throw new Error("plan parse fail");plan=JSON.parse(m[0]);}
+    $("aibar").style.width="60%";
+    $("aistatus").innerHTML="Step 3/4: Plan apply...";
+    await applyPlan(plan);
+    $("aibar").style.width="100%";
+    $("aistatus").innerHTML="<b class='ok'>&#10004; AUTEUR edit ready!</b> "+(plan.notes||"")+" <br>Ab PREVIEW CUT dekho, chaho to tweak karo, phir EXPORT.";
+  }catch(e){$("aistatus").innerHTML="<b class='err'>&#10008; "+e.message+"</b>";}
+  $("aibtn").disabled=false;setTimeout(()=>{$("aibar").style.width="0%"},4000);
+}
+async function applyPlan(p){
+  if(p.trim&&v.duration){
+    const s=Math.max(0,Math.min(p.trim.start||0,v.duration-1));
+    const e=Math.min(p.trim.end||v.duration,v.duration);
+    trimS=s;trimE=Math.max(e,s+1);$("tstart").value=trimS.toFixed(1);$("tend").value=trimE.toFixed(1);
+  }
+  if(p.speed){$("speedsel").value=String(p.speed);v.playbackRate=+p.speed||1;}
+  if(p.captions){capSize=Math.max(18,Math.min(p.captions.size||34,60));capColor=p.captions.color||capColor;capPos=p.captions.pos||capPos;$("capsize").value=capSize;var cc=$("capcolor");if(cc){cc.value=capColor;}var cp=$("cappos");if(cp){cp.value=capPos;}}
+  if(p.filters){fB=p.filters.brightness||100;fC=p.filters.contrast||100;fS=p.filters.sat||100;fBW=!!p.filters.bw;$("fb").value=fB;$("fc").value=fC;$("fs").value=fS;var bwel=$("fbw");if(bwel)bwel.checked=fBW;}
+  remapCaps();
+  if(p.hook){$("ttext").value=p.hook;$("tanim").value=p.hook_anim||"pop";}
+  overlays=[];
+  const list=(p.overlays||[]).slice(0,3);
+  for(let i=0;i<list.length;i++){
+    const o=list[i];
+    $("aistatus").innerHTML="Step 4/4: B-roll "+(i+1)+"/"+list.length+" - "+String(o.prompt).slice(0,40)+"...";
+    try{await addBroll(o.prompt,Math.max(0,o.from||trimS),Math.min(o.to||trimE,trimE+trimS),o.fx||"cover");}catch(e){}
+  }
+  renderOvrs();
+  var ci=$("cutinfo");if(ci){ci.textContent="Cut length: "+(trimE-trimS).toFixed(1)+"s";}
+}
 async function genBroll(){
   const p=$("brollprompt").value.trim();
   if(!p){alert("B-roll ke liye kya dikhana hai? likho");return;}
