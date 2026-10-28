@@ -244,6 +244,7 @@ button { font-family:inherit; cursor:pointer; }
     <button class="nav-item" onclick="setView('memory')"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M12 3c-4 0-7 3-7 6 0 2 1 3 1 5l-1 3c3 1 5 1 7 1s4 0 7-1l-1-3c0-2 1-3 1-5 0-3-3-6-7-6z"/></svg>Memory</button>
     <button class="nav-item" onclick="setView('models')"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 12l9-5M12 12v10M12 12L3 7"/></svg>Models</button>
     <button class="nav-item" onclick="setView('tools')"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M14 6l4 4-9 9H5v-4z"/><path d="M13 7l2-2a2.8 2.8 0 014 4l-2 2"/></svg>Tools</button>
+    <button class="nav-item" onclick="setView('publisher')"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M4 11l14-6v14L4 13z"/><circle cx="19.5" cy="9" r="1.5" fill="#fff"/><path d="M3 11v2"/></svg>Publisher</button>
     <button class="nav-item" onclick="setView('settings')"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.2 2.2M16.9 16.9l2.2 2.2M19.1 4.9l-2.2 2.2M7.1 16.9l-2.2 2.2"/></svg>Settings</button>
     <button class="nav-item" onclick="setView('logs')"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M4 5h16M4 10h16M4 15h10M4 20h7"/></svg>Logs</button>
   </nav>
@@ -374,7 +375,7 @@ const SYSTEM_PROMPT =
   "- User gives a goal/plan/todo: create tasks with add_task, and mark done with complete_task when finished. " +
   "- Calculations or data: run_js with JavaScript. " +
   "Write code in any language. Use markdown, code blocks with language tags. " +
-  "When the user wants to post on social media (Reddit, Instagram, YouTube, LinkedIn, WhatsApp, X etc), write the post text in their style (with hashtags/emojis where fitting), adapt it to the platform, then call share_post with the final text. " +
+  "When the user wants to post on social media (Reddit, Instagram, YouTube, LinkedIn, WhatsApp, X etc), write the post text in their style (with hashtags/emojis where fitting), adapt it to the platform, then call share_post with the final text (one-tap). If the user wants full auto-post to multiple platforms after approval, draft title+text and call publish_post instead. " +
   "CRITICAL LANGUAGE RULE: ALWAYS reply in the exact same language and script as the user's last message. English question -> English answer. Hinglish -> Hinglish. Pure Hindi -> pure Hindi. Marathi -> Marathi. Any language on Earth -> that same language. Never switch unless the user switches. Your search_web tool WORKS and queries multiple live sources in parallel (web search, global news via GDELT, tech news via Hacker News, encyclopedia). Always use it for current info, news, prices, facts. Pass ENGLISH keywords even if the user speaks another language. If a search returns no results, retry once with simpler keywords. Think step by step.";
 
 let messages = [{ role: "system", content: SYSTEM_PROMPT }];
@@ -590,6 +591,113 @@ async function share_post(text) {
   return "Broadcast card displayed to the user with platform buttons (WhatsApp, Telegram, Reddit, X, LinkedIn, Facebook, Instagram, native share). The text is ready - user picks the platform and confirms the post there.";
 }
 
+async function saveTelegram() {
+  const token = document.getElementById("tgtoken").value.trim();
+  const channel = document.getElementById("tgchannel").value.trim();
+  if (!token || !channel) { alert("Token aur channel dono daalo."); return; }
+  try {
+    const r = await fetch("https://api.telegram.org/bot" + token + "/sendMessage", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: channel, text: "ULTRON connected to this channel." })
+    });
+    const j = await r.json();
+    if (j.ok) {
+      localStorage.setItem("ultron_tg", JSON.stringify({ token, channel }));
+      logAction("Telegram connected: " + channel);
+      alert("Telegram connected! Test message channel me bhej diya.");
+      setView("publisher");
+    } else { alert("Telegram error: " + (j.description || "invalid")); }
+  } catch (e) { alert("Network error: " + e.message); }
+}
+
+function connectReddit() {
+  const cid = document.getElementById("rdcid").value.trim();
+  const secret = document.getElementById("rdsecret").value.trim();
+  const sub = document.getElementById("rdsub").value.trim().replace(/^r\//i, "");
+  if (!cid || !secret || !sub) { alert("Client ID, secret aur subreddit teeno daalo."); return; }
+  localStorage.setItem("ultron_reddit", JSON.stringify({ cid, secret, sub }));
+  const uri = encodeURIComponent(location.origin + location.pathname);
+  window.location = "https://www.reddit.com/api/v1/authorize?client_id=" + encodeURIComponent(cid) +
+    "&response_type=token&state=ultron_reddit&redirect_uri=" + uri + "&duration=permanent&scope=submit,identity";
+}
+
+async function sendTelegram(text) {
+  const tg = JSON.parse(localStorage.getItem("ultron_tg") || "null");
+  if (!tg) return { ok: false, msg: "not connected" };
+  try {
+    const r = await fetch("https://api.telegram.org/bot" + tg.token + "/sendMessage", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: tg.channel, text: text })
+    });
+    const j = await r.json();
+    return j.ok ? { ok: true, msg: "sent to " + tg.channel } : { ok: false, msg: j.description || "error" };
+  } catch (e) { return { ok: false, msg: e.message }; }
+}
+
+async function sendReddit(title, text) {
+  const rd = JSON.parse(localStorage.getItem("ultron_reddit") || "null");
+  if (!rd || !rd.token) return { ok: false, msg: "not connected" };
+  try {
+    const r = await fetch("https://oauth.reddit.com/api/submit", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + rd.token, "Content-Type": "application/x-www-form-urlencoded" },
+      body: "sr=" + encodeURIComponent(rd.sub) + "&kind=self&title=" + encodeURIComponent(title.slice(0, 290)) + "&text=" + encodeURIComponent(text)
+    });
+    const j = await r.json();
+    const errs = j && j.json && j.json.errors ? j.json.errors : [];
+    if (r.ok && errs.length === 0) return { ok: true, msg: "posted to r/" + rd.sub };
+    return { ok: false, msg: errs.map(e => e[1]).join("; ") || "HTTP " + r.status };
+  } catch (e) { return { ok: false, msg: e.message }; }
+}
+
+async function publish_post(title, text) {
+  const tg = JSON.parse(localStorage.getItem("ultron_tg") || "null");
+  const rd = JSON.parse(localStorage.getItem("ultron_reddit") || "null");
+  logAction("Publish approval card: " + title.slice(0, 26));
+  const card = document.createElement("div");
+  card.style.cssText = "align-self:flex-start;max-width:min(94%,720px);border:1px solid var(--red2);background:var(--panel2);padding:14px;border-radius:3px;box-shadow:0 0 14px rgba(255,0,0,.25)";
+  card.innerHTML = '<div style="font-size:.66rem;letter-spacing:.25em;color:var(--red2);margin-bottom:8px">PUBLISH - REVIEW & APPROVE</div>' +
+    '<input id="pubtitle" style="width:100%;padding:8px 10px;background:#070709;color:#fff;border:1px solid var(--line2);font-family:inherit;font-size:.9rem;margin-bottom:6px" value="' + title.replace(/"/g, "&quot;").slice(0, 290) + '">' +
+    '<textarea id="pubtext" style="width:100%;min-height:110px;padding:9px 10px;background:#070709;color:#fff;border:1px solid var(--line2);font-family:inherit;font-size:.88rem;margin-bottom:8px">' + text.replace(/</g, "&lt;") + "</textarea>" +
+    '<div style="display:flex;flex-direction:column;gap:4px;font-size:.82rem;margin-bottom:8px">' +
+    '<label><input type="checkbox" id="pt_tg" ' + (tg ? "checked" : "disabled") + ' style="accent-color:red"> TELEGRAM ' + (tg ? "(@" + tg.channel + ")" : "(connect in Publisher menu)") + "</label>" +
+    '<label><input type="checkbox" id="pt_rd" ' + (rd && rd.token ? "checked" : "disabled") + ' style="accent-color:red"> REDDIT ' + (rd && rd.token ? "(r/" + rd.sub + ")" : "(connect in Publisher menu)") + "</label>" +
+    "</div>";
+  const btnrow = document.createElement("div");
+  btnrow.style.cssText = "display:flex;gap:8px;flex-wrap:wrap";
+  const pub = document.createElement("button");
+  pub.style.cssText = "background:linear-gradient(135deg,#8b0000,#d40000);border:none;color:#fff;padding:10px 16px;font-weight:700;letter-spacing:.12em;border-radius:2px;font-family:inherit";
+  pub.textContent = "✔ APPROVE & PUBLISH";
+  const bc = document.createElement("button");
+  bc.style.cssText = "background:transparent;border:1px solid var(--line2);color:var(--dim);padding:10px 12px;border-radius:2px;font-family:inherit";
+  bc.textContent = "🌐 ONE-TAP BROADCAST";
+  bc.onclick = () => share_post(document.getElementById("pubtext").value);
+  pub.onclick = async () => {
+    const t = document.getElementById("pubtitle").value.trim();
+    const body = document.getElementById("pubtext").value.trim();
+    const results = [];
+    pub.disabled = true; pub.textContent = "PUBLISHING...";
+    if (document.getElementById("pt_tg").checked) {
+      const res = await sendTelegram(body);
+      results.push((res.ok ? "✔" : "✖") + " TELEGRAM: " + res.msg);
+    }
+    if (document.getElementById("pt_rd").checked) {
+      const res = await sendReddit(t, body);
+      results.push((res.ok ? "✔" : "✖") + " REDDIT: " + res.msg);
+    }
+    if (!results.length) results.push("✖ Koi platform select nahi hua. Publisher menu me connect karo.");
+    results.forEach(r2 => logAction("Publish: " + r2.slice(0, 40)));
+    pub.textContent = results.join("  |  ").slice(0, 80);
+    pub.disabled = false;
+    renderTasks(); renderLogs();
+  };
+  btnrow.appendChild(pub); btnrow.appendChild(bc);
+  card.appendChild(btnrow);
+  chatEl.appendChild(card);
+  chatEl.scrollTop = chatEl.scrollHeight;
+  return "Publish card displayed. The user edits if needed, checks platforms, and taps APPROVE & PUBLISH. Posting then happens automatically to all connected+checked platforms.";
+}
+
 function run_js(code) {
   try {
     const logs = [];
@@ -610,10 +718,11 @@ const TOOLS = [
   { type: "function", function: { name: "recall", description: "Search long-term memory.", parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } } },
   { type: "function", function: { name: "add_task", description: "Add a task/to-do item to the task manager.", parameters: { type: "object", properties: { title: { type: "string" } }, required: ["title"] } } },
   { type: "function", function: { name: "complete_task", description: "Mark a matching open task as completed.", parameters: { type: "object", properties: { title: { type: "string" } }, required: ["title"] } } },
+  { type: "function", function: { name: "publish_post", description: "Show an approval card for auto-posting. After user approval, the system posts to all connected platforms (Telegram, Reddit) automatically. Use when the user wants to publish a topic they created.", parameters: { type: "object", properties: { title: { type: "string", description: "Post title (Reddit)" }, text: { type: "string", description: "Final post text" } }, required: ["title", "text"] } } },
   { type: "function", function: { name: "share_post", description: "Draft a social media post and show broadcast buttons to the user (WhatsApp, Telegram, Reddit, X, LinkedIn, Facebook, Instagram). The user confirms posting on the platform.", parameters: { type: "object", properties: { text: { type: "string", description: "The final post text" } }, required: ["text"] } } },
   { type: "function", function: { name: "run_js", description: "Execute JavaScript code. Return a value or console.log output.", parameters: { type: "object", properties: { code: { type: "string" } }, required: ["code"] } } }
 ];
-const TOOL_IMPLS = { search_web, weather, generate_image, remember, recall, add_task, complete_task, share_post, run_js };
+const TOOL_IMPLS = { search_web, weather, generate_image, remember, recall, add_task, complete_task, share_post, publish_post, run_js };
 
 // ---------------- CHAT LOOP ----------------
 async function agentReply() {
@@ -824,6 +933,27 @@ function setView(v) {
   } else if (v === "tools") {
     html = '<h2>ARSENAL</h2><div class="sub">Active tools available to ULTRON.</div><div class="toolgrid" style="grid-template-columns:repeat(3,1fr)">' +
       ["🌐 BROWSER::search_web", ">_ TERMINAL::run_js", "🖼 IMAGE::generate_image", "🌦 WEATHER::weather", "🧠 MEMORY::remember/recall", "📋 TASKS::add_task", "🎙 VOICE::mic input", "📁 FILES::attach", "⚡ CHAIN::multi-step"].map(t => { const p = t.split("::"); return '<div class="toolic on"><span>' + p[0].split(" ")[0] + '</span>' + p[0].split(" ")[1] + '<br><small>' + p[1] + '</small></div>'; }).join("") + "</div>";
+  } else if (v === "publisher") {
+    const tg = JSON.parse(localStorage.getItem("ultron_tg") || "null");
+    const rd = JSON.parse(localStorage.getItem("ultron_reddit") || "null");
+    const redirect = encodeURIComponent(location.origin + location.pathname);
+    html = '<h2>PUBLISHER PLATFORMS</h2><div class="sub">Connect karo. Approve karne ke baad ULTRON khud post karega.</div>' +
+      '<div style="font-size:.72rem;color:#2ecc71;margin-bottom:10px">' +
+      (tg ? "🟢 TELEGRAM connected (@" + tg.channel + ")" : "🔴 TELEGRAM not connected") + "<br>" +
+      (rd && rd.token ? "🟢 REDDIT connected (r/" + (rd.sub || "") + ")" : "🔴 REDDIT not connected") + "</div>" +
+      '<h2 style="margin-top:14px">TELEGRAM (easy)</h2>' +
+      '<div class="sub">1. Telegram me @BotFather kholo -> /newbot -> bot banao -> token copy karo.<br>2. Apne channel me bot ko ADMIN banao.<br>3. Neeche token + channel daalo.</div>' +
+      '<input type="text" id="tgtoken" placeholder="Bot token (123456:ABC...)" value="' + (tg ? tg.token : "") + '">' +
+      '<input type="text" id="tgchannel" placeholder="@your_channel (with @)" value="' + (tg ? tg.channel : "") + '">' +
+      '<button class="mprimary" onclick="saveTelegram()">SAVE + TEST POST</button>' +
+      '<h2 style="margin-top:16px">REDDIT</h2>' +
+      '<div class="sub">1. reddit.com/prefs/apps -> "create app" -> type: web app<br>2. redirect uri me EXACTLY ye daalo:<br><b style="color:#fff;user-select:all">' + decodeURIComponent(redirect) + '</b><br>3. client_id (app ke neeche chhota code) + secret neeche daalo.</div>' +
+      '<input type="text" id="rdcid" placeholder="Client ID" value="' + (rd ? rd.cid : "") + '">' +
+      '<input type="text" id="rdsecret" placeholder="Secret" value="' + (rd ? rd.secret : "") + '">' +
+      '<input type="text" id="rdsub" placeholder="Subreddit name (no r/)" value="' + (rd ? rd.sub : "") + '">' +
+      '<button class="mprimary" onclick="connectReddit()">CONNECT REDDIT</button>' +
+      '<div class="sub" style="margin-top:14px">Instagram / LinkedIn / X personal auto-post unke rules me band hai - unke liye ULTRON se "broadcast" mangna (one-tap share). YouTube/Facebook developer setup possible hai - assistant se magn.</div>';
+    // fall through to modal render below
   } else if (v === "settings") {
     html = '<h2>SETTINGS</h2>' +
       '<div class="sub">Voice replies: ' + (ttsOn ? "ON" : "OFF") + ' | Voice input: ' + micLang + '</div>' +
@@ -979,6 +1109,20 @@ if (!chatId) chatId = "c" + Date.now();
 localStorage.setItem("omni_current_chat", chatId);
 const saved = loadChats()[chatId];
 if (saved && saved.messages && saved.messages.length) messages = [{ role: "system", content: SYSTEM_PROMPT }].concat(saved.messages);
+// reddit OAuth implicit-flow callback
+(function () {
+  const h = location.hash || "";
+  if (h.includes("access_token") && h.includes("ultron_reddit")) {
+    const tok = new URLSearchParams(h.slice(1)).get("access_token");
+    const rd = JSON.parse(localStorage.getItem("ultron_reddit") || "{}");
+    if (tok && rd.cid) {
+      rd.token = tok;
+      localStorage.setItem("ultron_reddit", JSON.stringify(rd));
+      logAction("Reddit connected");
+    }
+    history.replaceState(null, "", location.pathname);
+  }
+})();
 renderAll();
 </script>
 </body>
