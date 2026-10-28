@@ -3,455 +3,306 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ULTRON CUT - Video Editor</title>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<title>ULTRON Studio - AI Video Editor</title>
 <style>
-:root{--red:#ff2222;--red2:#ff4444;--bg:#050505;--panel:#0d0d0d;--line:#2a1212;--line2:#3d1a1a;--txt:#fff;--dim:#a08a8a}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:var(--bg);color:var(--txt);font-family:Rajdhani,sans-serif;min-height:100vh}
-header{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
-.logo{font-weight:700;font-size:1.25rem;letter-spacing:2px}
-.logo b{color:var(--red2)}
-.back{color:var(--dim);text-decoration:none;font-size:.85rem;border:1px solid var(--line2);padding:6px 10px;border-radius:4px}
-main{max-width:900px;margin:0 auto;padding:12px}
-.card{border:1px solid var(--line2);background:var(--panel);padding:12px;margin-bottom:12px;border-radius:6px}
-.card h3{margin:0 0 10px;font-size:.85rem;letter-spacing:2px;color:var(--red2)}
-canvas#stage{width:100%;background:#000;border:1px solid var(--line2);border-radius:4px}
-.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
-label{font-size:.75rem;color:var(--dim)}
-input[type=text],input[type=number],select{background:#111;border:1px solid var(--line2);color:var(--txt);padding:8px;border-radius:4px;font-family:inherit;font-size:.85rem}
-input[type=number]{width:90px}
-input[type=file]{display:none}
-.btn{background:#1a0a0a;border:1px solid var(--red);color:var(--txt);padding:9px 16px;border-radius:4px;font-family:inherit;font-weight:600;font-size:.85rem;letter-spacing:1px;cursor:pointer}
-.btn:disabled{opacity:.4}
-.btn.primary{background:var(--red)}
-.btn.small{padding:5px 10px;font-size:.75rem}
-.btn.ghost{border-color:var(--line2);color:var(--dim)}
-input[type=range]{width:140px;accent-color:var(--red)}
-.status{font-size:.8rem;color:var(--dim);line-height:1.5}
-.status b{color:var(--txt)}
-.ok{color:#4caf50}.err{color:var(--red2)}
-.ovr{border:1px dashed var(--line2);padding:8px;margin:8px 0;border-radius:4px;font-size:.8rem}
-.bar{height:6px;background:#1a0a0a;border-radius:3px;overflow:hidden;margin:8px 0}
-.bar>div{height:100%;background:var(--red);width:0%}
-#capslist,#ovrlist{max-height:150px;overflow-y:auto}
-footer{text-align:center;color:var(--dim);font-size:.7rem;letter-spacing:2px;padding:8px;border-top:1px solid var(--line)}
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,'Segoe UI',sans-serif}
+body{background:#0a0a0c;color:#e8e8ea;min-height:100dvh;display:flex;flex-direction:column;align-items:center;padding:24px 16px 60px}
+.wrap{width:100%;max-width:640px}
+h1{font-size:1.35rem;text-align:center;letter-spacing:.5px}
+h1 b{color:#ff3e3e}
+.sub{text-align:center;color:#8a8a90;font-size:.85rem;margin:6px 0 24px}
+.card{background:#121216;border:1px solid #232329;border-radius:16px;padding:20px;margin-bottom:16px}
+.drop{border:2px dashed #3a3a42;border-radius:16px;padding:44px 20px;text-align:center;color:#9a9aa2;cursor:pointer;transition:.2s}
+.drop:active{border-color:#ff3e3e;color:#fff}
+.drop .big{font-size:1rem;color:#e8e8ea;margin-bottom:6px}
+.lbl{font-size:.8rem;color:#9a9aa2;margin:14px 0 8px}
+textarea{width:100%;background:#0d0d10;border:1px solid #2c2c33;border-radius:12px;color:#fff;padding:12px;font-size:.95rem;resize:vertical;min-height:74px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tile{background:#17171c;border:1.5px solid #2c2c33;border-radius:12px;padding:12px 8px;text-align:center;font-size:.78rem;color:#b0b0b8;cursor:pointer;transition:.15s}
+.tile.sel{border-color:#ff3e3e;color:#fff;background:#1d1418}
+.btn{width:100%;margin-top:16px;background:#ff3e3e;border:none;color:#fff;font-weight:700;font-size:1rem;padding:14px;border-radius:12px;cursor:pointer}
+.btn:disabled{background:#552525;cursor:wait}
+.ghost{background:transparent;border:1px solid #3a3a42;color:#c8c8cf;font-weight:500}
+.hidden{display:none}
+.pill{display:inline-block;background:#17171c;border:1px solid #2c2c33;border-radius:99px;padding:6px 14px;font-size:.78rem;color:#b0b0b8;cursor:pointer;margin-right:8px;margin-top:8px}
+.steps{list-style:none}
+.steps li{display:flex;gap:12px;align-items:center;padding:11px 0;color:#77777e;font-size:.95rem}
+.steps li.act{color:#fff}
+.steps li.done{color:#8fce8f}
+.steps li .dot{width:22px;height:22px;border-radius:50%;background:#1c1c22;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;flex:none}
+.steps li.act .dot{background:#ff3e3e;animation:pulse 1s infinite alternate}
+@keyframes pulse{from{box-shadow:0 0 0 0 #ff3e3e55}to{box-shadow:0 0 0 8px #ff3e3e00}}
+.bar{height:6px;background:#1c1c22;border-radius:99px;overflow:hidden;margin-top:14px}
+.bar>i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#ff3e3e,#ff8a5c);transition:width .5s}
+video{width:100%;border-radius:12px;background:#000;margin-bottom:12px}
+.center{text-align:center}
+.ok{color:#8fce8f}.err{color:#ff6b6b}
+.note{font-size:.75rem;color:#77777e;margin-top:10px;text-align:center}
+a.dl{display:block;text-decoration:none;text-align:center;background:#ff3e3e;color:#fff;font-weight:700;padding:14px;border-radius:12px;margin-top:10px}
 </style>
 </head>
 <body>
-<header><span class="logo">ULTRON <b>CUT</b></span><span class="status" id="fileinfo">no video loaded</span><a class="back" href="index.html">&larr; ULTRON</a></header>
-<main>
-<div class="card"><h3>&#9654; STAGE</h3><canvas id="stage" width="1280" height="720"></canvas>
-<div class="row"><button class="btn small" onclick="vplay()">PLAY</button><button class="btn small" onclick="vpause()">PAUSE</button><button class="btn small ghost" onclick="vseekTrim()">GO TO START</button><label>Time <span id="ctime">0.0s</span></label></div>
-<div class="row"><input type="file" id="vfile" accept="video/*"><button class="btn" onclick="document.getElementById('vfile').click()">LOAD VIDEO</button>
-<input type="file" id="mfile" accept="audio/*"><button class="btn ghost" onclick="document.getElementById('mfile').click()">MUSIC</button>
-<input type="file" id="capfile" accept="audio/*,video/*"></div>
+<div class="wrap">
+<h1>ULTRON <b>STUDIO</b></h1>
+<p class="sub">Add your video, pick a style. Auteur cuts it, builds the visuals and captions it.</p>
+
+<div class="card" id="s1">
+  <div class="drop" onclick="document.getElementById('vfile').click()">
+    <div class="big">+ Add your video</div>
+    <div id="finfo">Tap here - MP4, WebM, MOV. Sab kuch tumhare phone me hi process hota hai.</div>
+  </div>
+  <input type="file" id="vfile" accept="video/*" class="hidden">
 </div>
 
-<div class="card"><h3>&#9986; CUT (TRIM)</h3>
-<div class="row"><label>Start(s)</label><input type="number" id="tstart" value="0" step="0.1" min="0"><button class="btn small ghost" onclick="setNow('tstart')">SET=NOW</button>
-<label>End(s)</label><input type="number" id="tend" value="0" step="0.1" min="0"><button class="btn small ghost" onclick="setNow('tend')">SET=NOW</button>
-<button class="btn small" onclick="previewCut()">PREVIEW CUT</button></div>
-<div class="status" id="cutinfo"></div></div>
+<div class="card hidden" id="s2">
+  <video id="prev" controls muted playsinline></video>
+  <div class="lbl">How do you want to edit your video?</div>
+  <textarea id="aiprompt" placeholder="e.g. hook strong banao, captions bade yellow, city night b-roll, best 30 sec..."></textarea>
+  <div class="lbl">Ya ek style tile dabao:</div>
+  <div class="tiles" id="tiles"></div>
+  <div><span class="pill" id="musicpill" onclick="document.getElementById('mfile').click()">+ Background music (optional)</span><span id="mname" style="font-size:.75rem;color:#8fce8f"></span></div>
+  <input type="file" id="mfile" accept="audio/*" class="hidden">
+  <button class="btn" id="createbtn" onclick="createMyVideo()">Create my video</button>
+  <div class="note">Groq key zaroori hai (ULTRON app wali) - localStorage se utha li jaati hai</div>
+</div>
 
-<div class="card"><h3>&#129302; AI AUTO-EDIT ( AUTEUR MODE )</h3>
-<div class="row"><input type="text" id="aiprompt" placeholder="Prompt: 'glitch style, bold yellow captions, hook = first line, city night b-roll, best 30 sec'" style="flex:1;min-width:150px">
-<select id="aistyle" onchange="if(this.value){document.getElementById('aiprompt').value=this.value;this.value='';}">
-<option value="">STYLE...</option>
-<option value="Glitch style edit: bold white captions with red glow, glitch feel, hook title on first line, futuristic city b-roll, keep strongest 30 seconds">GLITCH</option>
-<option value="Minimal clean edit: subtle small white captions bottom, one elegant b-roll, natural colors, keep it tight">MINIMAL</option>
-<option value="Kinetic type edit: big bold yellow center captions, punchy energy, dynamic b-roll every few seconds, fast pace">KINETIC TYPE</option>
-<option value="Breaking news style: red bold captions, urgent tone, dramatic b-roll, hook title top">BREAKING NEWS</option></select>
-<button class="btn primary" id="aibtn" onclick="autoEdit()">&#127912; AUTO-EDIT</button></div>
-<div class="bar"><div id="aibar"></div></div>
-<div class="status" id="aistatus">Prompt likho - AI khud transcript padhega, plan banayega, captions/b-roll/text/filter sab apply karega. Phir PREVIEW aur EXPORT.</div></div>
+<div class="card hidden" id="s3">
+  <div class="lbl">Auteur is editing...</div>
+  <ul class="steps" id="steps">
+    <li id="st1"><span class="dot">1</span> Listening to your video (transcribe)</li>
+    <li id="st2"><span class="dot">2</span> Planning the edit (AI)</li>
+    <li id="st3"><span class="dot">3</span> Building visuals & captions</li>
+    <li id="st4"><span class="dot">4</span> Rendering final cut</li>
+  </ul>
+  <div class="bar"><i id="pbar"></i></div>
+  <div class="note" id="pnote">&nbsp;</div>
+</div>
 
-<div class="card"><h3>&#128172; AUTO CAPTIONS (Whisper AI)</h3>
-<div class="row"><button class="btn primary" id="capbtn" onclick="genCaptions()">&#127908; GENERATE CAPTIONS</button>
-<label>Size</label><input type="range" id="capsize" min="18" max="60" value="34" oninput="capSize=this.value">
-<label>Color</label><select id="capcolor" onchange="capColor=this.value"><option value="#fff">White</option><option value="#ff4444">Red</option><option value="#ffe600">Yellow</option><option value="#00e5ff">Cyan</option></select>
-<label>Pos</label><select id="cappos" onchange="capPos=this.value"><option value="bottom">Bottom</option><option value="center">Center</option><option value="top">Top</option></select>
-<button class="btn small ghost" onclick="capsOn=!capsOn">ON/OFF</button></div>
-<div class="bar"><div id="capbar"></div></div>
-<div class="status" id="capstatus">Groq Whisper se captions automatic banenge ( tumhara hi API key, free tier ).</div>
-<div id="capslist"></div></div>
+<div class="card hidden" id="s4">
+  <div class="lbl">Your edit is ready</div>
+  <video id="out" controls playsinline></video>
+  <div id="summary" class="note" style="text-align:left"></div>
+  <a class="dl" id="dlbtn" download="ultron-edit.webm">Download video</a>
+  <button class="btn ghost" onclick="again()">Try another style / prompt</button>
+  <button class="btn ghost" onclick="reset()">New video</button>
+</div>
 
-<div class="card"><h3>&#127916; B-ROLL &amp; MOTION GRAPHICS</h3>
-<div class="row"><input type="text" id="brollprompt" placeholder="AI b-roll: futuristic city at night..." style="flex:1;min-width:160px">
-<button class="btn primary" onclick="genBroll()">&#10024; GENERATE</button>
-<input type="file" id="bfile" accept="image/*"><button class="btn ghost" onclick="document.getElementById('bfile').click()">UPLOAD IMAGE</button></div>
-<div class="status">AI image free (Pollinations). Har b-roll pe motion effect: ken burns zoom + fade.</div>
-<div id="ovrlist"></div></div>
-
-<div class="card"><h3>&#128221; TEXT OVERLAY + ANIMATION</h3>
-<div class="row"><input type="text" id="ttext" placeholder="Title text..." style="flex:1;min-width:160px">
-<label>Pos</label><select id="tpos"><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select>
-<label>Anim</label><select id="tanim"><option value="none">None</option><option value="fade">Fade</option><option value="slide">Slide up</option><option value="pop">Pop</option><option value="type">Typewriter</option></select>
-<label>Size</label><input type="range" id="tsize" min="20" max="90" value="48"></div>
-<div class="row"><label>From(s)</label><input type="number" id="tfrom" value="0" step="0.1"><label>To(s)</label><input type="number" id="tto" value="3" step="0.1"></div></div>
-
-<div class="card"><h3>&#127925; AUDIO + SPEED + FILTERS</h3>
-<div class="row"><label>Music vol</label><input type="range" id="mvol" min="0" max="100" value="60" oninput="mGain&&(mGain.gain.value=this.value/100)">
-<button class="btn small ghost" onclick="muteOrig=!muteOrig">MUTE ORIGINAL</button>
-<label>Speed</label><select id="speedsel" onchange="v.playbackRate=+this.value"><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option></select></div>
-<div class="row"><label>Bright</label><input type="range" id="fb" min="50" max="150" value="100" oninput="fB=this.value">
-<label>Contrast</label><input type="range" id="fc" min="50" max="150" value="100" oninput="fC=this.value">
-<label>Sat</label><input type="range" id="fs" min="0" max="200" value="100" oninput="fS=this.value">
-<label><input type="checkbox" id="fbw" onchange="fBW=this.checked"> B&amp;W</label></div></div>
-
-<div class="card"><h3>&#128190; EXPORT</h3>
-<div class="bar"><div id="xbar"></div></div>
-<div class="row"><button class="btn primary" id="xbtn" onclick="exportVideo()" disabled>&#11014; EXPORT VIDEO</button><a id="xdl" class="btn ghost" style="display:none" download="ultron-cut.mp4">DOWNLOAD</a></div>
-<div class="status" id="xstatus">Load video first. Export real-time me chalta hai ( 30s cut = 30s export ).</div></div>
-</main>
-<footer>ULTRON CUT v2 | CAPTIONS | B-ROLL | MOTION FX | FREE FOREVER</footer>
+<div class="note hidden" id="errbox"></div>
+<video id="vid" class="hidden" muted playsinline></video>
+<video id="mus" class="hidden" loop playsinline></video>
+<canvas id="stage" class="hidden"></canvas>
+</div>
 <script>
 const $=id=>document.getElementById(id);
-const v=document.createElement("video"); v.crossOrigin="anonymous"; v.muted=false;
-const music=document.createElement("audio");
-const stage=$("stage"),ctx=stage.getContext("2d");
-let trimS=0,trimE=0,muteOrig=false,capSize=34,capColor="#fff",capPos="bottom",capsOn=true,caps=[],capsBusy=false,rawCaps=[];
-let mGain=null,vidGain=null,actx=null,recNode=null;
-let overlays=[],fB=100,fC=100,fS=100,fBW=false,exporting=false;
-
-$("vfile").onchange=e=>{const f=e.target.files[0];if(!f)return;v.src=URL.createObjectURL(f);v.onloadedmetadata=()=>{
-  trimS=0;trimE=v.duration;$("tstart").value=0;$("tend").value=v.duration.toFixed(1);
-  const w=Math.min(1280,v.videoWidth),h=Math.round(w*v.videoHeight/v.videoWidth);
-  stage.width=w;stage.height=h;
-  initAudio();
-  $("fileinfo").innerHTML="&#9679; <b>"+f.name.slice(0,24)+"</b> ("+(f.size/1048576).toFixed(1)+"MB, "+v.duration.toFixed(1)+"s)";
-  $("cutinfo").textContent="Cut length: "+(trimE-trimS).toFixed(1)+"s";
-  $("xbtn").disabled=false;
-  v.currentTime=trimS;draw();
-};};
-
-function initAudio(){
-  try{
-    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
-    if(!recNode){
-      const src=actx.createMediaElementSource(v),mg=actx.createMediaElementSource(music);
-      recNode=actx.createMediaStreamDestination();
-      vidGain=actx.createGain();mGain=actx.createGain();
-      src.connect(vidGain);mg.connect(mGain);
-      vidGain.connect(actx.destination);mGain.connect(actx.destination);
-      vidGain.connect(recNode);mGain.connect(recNode);
-    }
-  }catch(e){}
-}
-
-$("mfile").onchange=e=>{const f=e.target.files[0];if(!f)return;music.src=URL.createObjectURL(f);music.loop=true;initAudio();};
-
-function vplay(){actx&&actx.resume();if(music.src&&music.currentTime===0)music.play();v.play();}
-function vpause(){v.pause();music.pause();}
-function vseekTrim(){v.currentTime=trimS;if(music.src)music.currentTime=0;}
-function setNow(id){$(id).value=v.currentTime.toFixed(1);updateTrim();}
-function previewCut(){vseekTrim();vplay();}
-
-$("tstart").onchange=$("tend").onchange=updateTrim;
-function updateTrim(){
-  trimS=Math.max(0,+$("tstart").value||0);
-  trimE=Math.min(v.duration||0,+$("tend").value||0);
-  if(trimE<=trimS)trimE=(v.duration||1);
-  $("cutinfo").textContent="Cut length: "+(trimE-trimS).toFixed(1)+"s";
-}
-
-/* ---------------- AUTO CAPTIONS ---------------- */
-async function genCaptions(){
-  if(!v.src){alert("Pehle video load karo");return;}
+const vid=$("vid"),stage=$("stage"),ctx=stage.getContext("2d"),mus=$("mus");
+let rawCaps=[],caps=[],trimS=0,trimE=0,spd=1,capSize=34,capColor="#fff",capPos="bottom";
+let hookText="",hookAnim="pop",hookPos="center",fB=100,fC=100,fS=100,fBW=false;
+let overlays=[],muted=false,styleSel="",vURL=null,mURL=null;
+const STYLES=[
+ {n:"Glitch",d:"Neon glitch feel",p:"Glitch style edit: bold white captions with red glow, punchy pace, futuristic neon city b-roll, strong hook title"},
+ {n:"Minimal",d:"Clean & calm",p:"Minimal clean edit: subtle small white captions, one elegant b-roll, natural colors, calm pace"},
+ {n:"Kinetic",d:"Big bold type",p:"Kinetic type edit: big bold yellow captions center screen, energetic, dynamic b-roll every few seconds"},
+ {n:"News",d:"Breaking style",p:"Breaking news style: red urgent captions, dramatic b-roll, serious tone"},
+ {n:"Docu",d:"Story mode",p:"Documentary style: thoughtful pacing, soft captions bottom, scenic b-roll, cinematic look"},
+ {n:"Meme",d:"Fast & funny",p:"Meme style edit: fast cuts, big white captions with outline, funny zoom, trending vibe"}
+];
+$("tiles").innerHTML=STYLES.map((s,i)=>'<div class="tile" id="t'+i+'" onclick="pickStyle('+i+')"><b style="color:#fff">'+s.n+'</b><br>'+s.d+'</div>').join("");
+function pickStyle(i){styleSel=STYLES[i].p;STYLES.forEach((s,j)=>$("t"+j).classList.toggle("sel",j===i));}
+$("vfile").onchange=e=>{const f=e.target.files[0];if(!f)return;vURL=URL.createObjectURL(f);vid.src=vURL;$("prev").src=vURL;vid.onloadedmetadata=()=>{trimS=0;trimE=vid.duration;stage.width=Math.min(1280,vid.videoWidth);stage.height=Math.round(stage.width*vid.videoHeight/vid.videoWidth);$("finfo").textContent=f.name+" ("+(f.size/1048576).toFixed(0)+"MB, "+vid.duration.toFixed(0)+"s)";$("s1").classList.add("hidden");$("s2").classList.remove("hidden");};};
+$("mfile").onchange=e=>{const f=e.target.files[0];if(!f)return;mURL=URL.createObjectURL(f);mus.src=mURL;mus.load();$("mname").textContent=f.name;};
+function setStep(n,bar,note){[1,2,3,4].forEach(i=>{const li=$("st"+i);li.className=i<n?"done":i===n?"act":"";});$("pbar").style.width=bar+"%";if(note)$("pnote").innerHTML=note;}
+function show(el){["s1","s2","s3","s4"].forEach(s=>$(s).classList.add("hidden"));$(el).classList.remove("hidden");window.scrollTo(0,0);}
+function again(){show("s2");}
+function reset(){location.reload();}
+async function createMyVideo(){
   const key=localStorage.getItem("ultron_groq_key");
-  if(!key){alert("Groq key ULTRON app me daalo pehle ( ek baar, wahi key chalegi )");return;}
-  if(capsBusy)return;capsBusy=true;$("capbtn").disabled=true;
-  $("capstatus").innerHTML="Uploading audio to Whisper...";
+  if(!key){fail("Groq key nahi mili. ULTRON app (index.html) me ek baar key daalo, phir wapas aao.");return;}
+  if(!vid.src){fail("Pehle video add karo.");return;}
+  $("createbtn").disabled=true;show("s3");$("errbox").classList.add("hidden");
   try{
-    let blob=new Blob([await (await fetch(v.src)).blob()],{type:"video/webm"});
-    const orig=$("vfile").files[0];
-    let useFile=orig;
-    if(orig.size>24*1048576){
-      try{
-        $("capstatus").innerHTML="File badi hai - fast audio extract chal raha hai...";
-        const wav=await extractWav(orig);
-        useFile=new File([wav],"audio.wav",{type:"audio/wav"});
-        $("capstatus").innerHTML="Audio nikla ("+(wav.size/1048576).toFixed(1)+"MB WAV) - Whisper ko bheja...";
-      }catch(e2){
-        $("capstatus").innerHTML="Fast extract fail - realtime mode ( "+((trimE-trimS)).toFixed(0)+"s )...";
-        blob=await recordAudioOnly();
-        useFile=new File([blob],"audio.webm",{type:"audio/webm"});
-      }
+    setStep(1,8,"Whisper sun raha hai... (badi file me thoda time)");
+    rawCaps=await transcribe(key);
+    setStep(1,30,rawCaps.length+" lines sun li");
+    setStep(2,42,"Auteur plan bana raha hai...");
+    const plan=await planEdit(key);
+    setStep(2,60,"Plan ready: "+(plan.notes||""));
+    setStep(3,68,"Captions & text set...");
+    applyPlan(plan);
+    overlays=[];
+    for(const o of (plan.overlays||[]).slice(0,3)){
+      setStep(3,72+Math.random()*10,"B-roll: "+String(o.prompt).slice(0,40)+"...");
+      try{const img=await genBroll(o.prompt);overlays.push({img,from:o.from||trimS,to:o.to||trimE,fx:o.fx||"cover",label:String(o.prompt).slice(0,26)});}catch(e){}
     }
-    const fd=new FormData();
-    fd.append("file",useFile);fd.append("model","whisper-large-v3-turbo");
-    fd.append("response_format","verbose_json");
-    $("capbar").style.width="40%";
-    const r=await fetch("https://api.groq.com/openai/v1/audio/transcriptions",{method:"POST",headers:{Authorization:"Bearer "+key},body:fd});
-    if(!r.ok){throw new Error((await r.text()).slice(0,160));}
-    const d=await r.json();
-    rawCaps=(d.segments||[]).map(s=>({from:s.start,to:s.end,text:(s.text||"").trim()}));
     remapCaps();
-    $("capbar").style.width="100%";
-    $("capstatus").innerHTML="<b class='ok'>&#10004; "+caps.length+" captions ready!</b> Preview/Export me dikhenge. ON/OFF se toggle.";
-  }catch(e){
-    $("capstatus").innerHTML="<b class='err'>&#10008; "+e.message+"</b>";
+    setStep(4,80,"Rendering (real-time, tab khula rakho)...");
+    const blob=await exportEdit(key);
+    setStep(4,100,"Done!");
+    const url=URL.createObjectURL(blob);
+    $("out").src=url;$("dlbtn").href=url;$("dlbtn").download="ultron-edit."+(blob.type.includes("mp4")?"mp4":"webm");
+    $("summary").innerHTML=(plan.notes||"")+(rawCaps.length?"<br>"+caps.length+" captions, "+overlays.length+" b-rolls, "+((trimE-trimS)/spd).toFixed(1)+"s final":"");
+    setTimeout(()=>show("s4"),400);
+  }catch(e){fail(e.message);}
+  $("createbtn").disabled=false;
+}
+function fail(m){show("s2");const eb=$("errbox");eb.classList.remove("hidden");eb.innerHTML="<b class='err'>Problem: "+m+"</b> <a href='editor.html' style='color:#ff8a5c'>retry</a>";}
+async function transcribe(key){
+  const orig=$("vfile").files[0];let useFile=orig;
+  if(orig.size>24*1048576){
+    try{const wav=await extractWav(orig);useFile=new File([wav],"audio.wav",{type:"audio/wav"});}
+    catch(e){const b=await recordAudioOnly();useFile=new File([b],"audio.webm",{type:"audio/webm"});}
   }
-  capsBusy=false;$("capbtn").disabled=false;
-  setTimeout(()=>{$("capbar").style.width="0%"},2500);
+  const fd=new FormData();fd.append("file",useFile);fd.append("model","whisper-large-v3-turbo");fd.append("response_format","verbose_json");
+  const r=await fetch("https://api.groq.com/openai/v1/audio/transcriptions",{method:"POST",headers:{Authorization:"Bearer "+key},body:fd});
+  if(!r.ok)throw new Error("Whisper: "+(await r.text()).slice(0,120));
+  const d=await r.json();
+  return (d.segments||[]).map(s=>({from:s.start,to:s.end,text:(s.text||"").trim()})).filter(s=>s.text);
 }
-function recordAudioOnly(){
-  return new Promise(res=>{
-    const a2=new (window.AudioContext||window.webkitAudioContext)();
-    const src=a2.createMediaElementSource(v);
-    const dest=a2.createMediaStreamDestination();
-    src.connect(dest); // silent - not to speakers
-    const rec=new MediaRecorder(dest.stream,{mimeType:"audio/webm;codecs=opus"});
-    const chunks=[];rec.ondataavailable=e=>chunks.push(e.data);
-    rec.onstop=()=>{a2.close();res(new Blob(chunks,{type:"audio/webm"}))};
-    v.currentTime=trimS;v.muted=false;
-    rec.start();v.play();
-    const chk=setInterval(()=>{
-      $("capbar").style.width=Math.min(95,((v.currentTime-trimS)/(trimE-trimS)*95))+"%";
-      if(v.currentTime>=trimE||v.ended){clearInterval(chk);v.pause();rec.stop();}
-    },250);
-  });
-}
-async function extractWav(file){
-  const ab=await file.arrayBuffer();
-  const actx=new (window.AudioContext||window.webkitAudioContext)();
-  const buf=await actx.decodeAudioData(ab);
-  actx.close();
+async function extractWav(blob){
+  const ab=await blob.arrayBuffer();
+  const AC=window.AudioContext||window.webkitAudioContext;
+  const buf=await new AC().decodeAudioData(ab);
   const off=new OfflineAudioContext(1,Math.ceil(buf.duration*16000),16000);
-  const s=off.createBufferSource();s.buffer=buf;s.connect(off.destination);s.start();
-  const rb=await off.startRendering();
-  const ch=rb.getChannelData(0);
-  const dv=new DataView(new ArrayBuffer(44+ch.length*2));
-  let p=0;const ws=t=>{for(let i=0;i<t.length;i++)dv.setUint8(p++,t.charCodeAt(i))};
+  const src=off.createBufferSource();src.buffer=buf;src.connect(off.destination);src.start();
+  const rb=await off.startRendering();const ch=rb.getChannelData(0);
+  const dv=new DataView(new ArrayBuffer(44+ch.length*2));let p=0;
+  const ws=s=>{for(let i=0;i<s.length;i++)dv.setUint8(p++,s.charCodeAt(i));};
   ws("RIFF");dv.setUint32(p,36+ch.length*2,true);p+=4;ws("WAVE");ws("fmt ");
   dv.setUint32(p,16,true);p+=4;dv.setUint16(p,1,true);p+=2;dv.setUint16(p,1,true);p+=2;
-  dv.setUint32(p,16000,true);p+=4;dv.setUint32(p,32000,true);p+=4;
-  dv.setUint16(p,2,true);p+=2;dv.setUint16(p,16,true);p+=2;
+  dv.setUint32(p,16000,true);p+=4;dv.setUint32(p,32000,true);p+=4;dv.setUint16(p,2,true);p+=2;dv.setUint16(p,16,true);p+=2;
   ws("data");dv.setUint32(p,ch.length*2,true);p+=4;
-  for(let i=0;i<ch.length;i++){const x=Math.max(-1,Math.min(1,ch[i]));dv.setInt16(p,x<0?x*0x8000:x*0x7FFF,true);p+=2;}
+  for(let i=0;i<ch.length;i++){const s=Math.max(-1,Math.min(1,ch[i]));dv.setInt16(p,s<0?s*0x8000:s*0x7FFF,true);p+=2;}
   return new Blob([dv.buffer],{type:"audio/wav"});
 }
-function renderCapsList(){
-  const el=$("capslist");el.innerHTML=caps.slice(0,40).map((c,i)=>
-    '<div class="ovr">'+c.from.toFixed(1)+'s-'+c.to.toFixed(1)+'s &nbsp;'+c.text.replace(/</g,"&lt;")+'</div>').join("");
+async function recordAudioOnly(){
+  const AC=window.AudioContext||window.webkitAudioContext;const actx=new AC();
+  const dest=actx.createMediaStreamDestination();
+  const src=actx.createMediaElementSource(vid);src.connect(dest);
+  const rec=new MediaRecorder(dest.stream);const chunks=[];
+  rec.ondataavailable=e=>chunks.push(e.data);
+  const done=new Promise(res=>rec.onstop=()=>res(new Blob(chunks,{type:"audio/webm"})));
+  vid.currentTime=trimS;vid.muted=false;vid.volume=0;
+  await vid.play();rec.start();
+  await new Promise(res=>{const w=()=>{if(vid.currentTime>=trimE||vid.ended){res();}else requestAnimationFrame(w);};w();});
+  vid.pause();rec.stop();try{await actx.close();}catch(e){}
+  return done;
 }
-function drawCaps(t,dur){
-  if(!capsOn||!caps.length)return;
-  const c=caps.find(x=>t>=x.from&&t<=x.to);if(!c)return;
-  const pop=Math.min(1,(t-c.from)/0.18);
-  const fs=capSize*(stage.width/1280)*1.9;
-  const scale=(0.85+0.15*pop);
-  ctx.save();
-  ctx.font="700 "+fs+"px Rajdhani,Arial";
-  ctx.textAlign="center";ctx.globalAlpha=Math.min(1,pop*1.2);
-  const words=c.text.split(/\s+/);let lines=[],cur="";
-  const maxw=stage.width*0.85;
-  words.forEach(w=>{const t2=cur?cur+" "+w:w;
-    if(ctx.measureText(t2).width*scale>maxw){lines.push(cur);cur=w;}else cur=t2;});
-  if(cur)lines.push(cur);
-  if(lines.length>3){lines=lines.slice(0,3);lines[2]+="...";}
-  let y=capPos==="bottom"?stage.height-fs*0.6-lines.length*fs:(capPos==="center"?stage.height/2-lines.length*fs/2+fs*0.6:fs*1.4);
-  ctx.translate(stage.width/2,y+lines.length*fs/2);ctx.scale(scale,scale);ctx.translate(-stage.width/2,-(y+lines.length*fs/2));
-  lines.forEach((ln,i)=>{
-    const ly=y+i*fs;
-    ctx.lineWidth=fs*0.16;ctx.strokeStyle="rgba(0,0,0,.9)";ctx.lineJoin="round";
-    ctx.strokeText(ln,stage.width/2,ly);
-    ctx.fillStyle=capColor;ctx.fillText(ln,stage.width/2,ly);
-  });
-  ctx.restore();
+async function planEdit(key){
+  const tr=rawCaps.map(s=>"["+s.from.toFixed(1)+"-"+s.to.toFixed(1)+"s] "+s.text).join("\n").slice(0,6000);
+  const userPrompt=$("aiprompt").value.trim();
+  const sys="You are AUTEUR, an expert AI reel editor. Transcript of the user's video (file timeline) and instructions are given. Return ONLY valid JSON, schema: {\"hook\":string(max 40 chars, the on-screen title), \"hook_anim\":\"fade\"|\"slide\"|\"pop\"|\"typewriter\"|\"none\", \"trim\":{\"start\":number|null,\"end\":number|null}, \"speed\":0.5|1|1.5|2, \"captions\":{\"size\":number 18-60,\"color\":\"#fff\"|\"#ff4444\"|\"#ffe600\"|\"#00e5ff\",\"pos\":\"bottom\"|\"center\"|\"top\"}, \"filters\":{\"brightness\":number,\"contrast\":number,\"sat\":number,\"bw\":boolean}, \"overlays\":array up to 3 of {\"prompt\":string,\"from\":number,\"to\":number,\"fx\":\"cover\"|\"fade\"|\"pip\"}, \"notes\":one short line in the user's language summarizing the edit}. Trim should cut weak parts, keep hook-to-payoff, max ~60s. Overlay times must be within trim. User instructions: "+(userPrompt||"")+(styleSel?(" | Style: "+styleSel):"");
+  const r=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+key},
+    body:JSON.stringify({model:"openai/gpt-oss-120b",response_format:{type:"json_object"},messages:[{role:"system",content:sys},{role:"user",content:"Video duration: "+(trimE-trimS).toFixed(1)+"s. Transcript:\n"+(tr||"(no speech - plan a visual edit with hook title and b-rolls)")}],temperature:0.7})});
+  if(!r.ok)throw new Error("Plan API: "+(await r.text()).slice(0,120));
+  const d=await r.json();
+  let c=d.choices[0].message.content;
+  try{return JSON.parse(c);}catch(e){return JSON.parse(c.match(/\{[\s\S]*\}/)[0]);}
 }
-
-/* ---------------- B-ROLL / MOTION ---------------- */
-$("bfile").onchange=e=>{const f=e.target.files[0];if(!f)return;
-  const img=new Image();img.onload=()=>addOverlay(img,f.name.slice(0,18));img.src=URL.createObjectURL(f);};
+function applyPlan(p){
+  if(p.trim&&trimE-trimS>1){
+    const baseS=trimS,baseE=trimE;
+    const s=Math.min(Math.max(baseS+(p.trim.start||0),0),vid.duration-1);
+    const e=Math.min(p.trim.end!=null?p.trim.end:baseE,vid.duration);
+    trimS=s;trimE=e>trimS?e:baseE;
+  }
+  spd=p.speed||1;vid.playbackRate=1;
+  if(p.captions){capSize=Math.min(60,Math.max(18,p.captions.size||34));capColor=p.captions.color||"#fff";capPos=p.captions.pos||"bottom";}
+  if(p.filters){fB=p.filters.brightness||100;fC=p.filters.contrast||100;fS=p.filters.sat||100;fBW=!!p.filters.bw;}
+  hookText=p.hook||"";hookAnim=p.hook_anim||"pop";
+}
 function remapCaps(){
-  const spd=+($("speedsel").value)||1;
-  caps=rawCaps.map(s=>({from:Math.max(0,(s.from-trimS)/spd),to:Math.max(0,(s.to-trimS)/spd),text:s.text})).filter(s=>s.to>0&&s.from<(trimE-trimS)/spd);
-  renderCapsList();
+  caps=rawCaps.map(s=>({from:Math.max(0,(s.from-trimS)/spd),to:Math.max(0,(s.to-trimS)/spd),text:s.text})).filter(s=>s.to>0.05&&s.from<(trimE-trimS)/spd);
 }
-async function addBroll(prompt,from,to,fx){
+async function genBroll(prompt){
   const r=await fetch("https://image.pollinations.ai/prompt/"+encodeURIComponent(prompt+", cinematic, high quality")+"?width=1280&height=720&nologo=true&seed="+Math.floor(Math.random()*99999));
   const blob=await r.blob();
-  const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=URL.createObjectURL(blob);});
-  addOverlay(img,prompt.slice(0,18));
-  const o=overlays[overlays.length-1];o.from=from;o.to=to;if(fx)o.fx=fx;
-  renderOvrs();
+  return await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=URL.createObjectURL(blob);});
 }
-async function autoEdit(){
-  if(!v.src){alert("Pehle video load karo");return;}
-  const key=localStorage.getItem("ultron_groq_key");
-  if(!key){alert("Groq key ULTRON app me daalo (ek baar)");return;}
-  const p=$("aiprompt").value.trim();
-  if(!p){alert("Prompt likho ya STYLE choose karo");return;}
-  $("aibtn").disabled=true;$("aibar").style.width="10%";
-  try{
-    $("aistatus").innerHTML="Step 1/4: Transcript (Whisper)...";
-    if(!rawCaps.length){await genCaptions();}
-    $("aibar").style.width="40%";
-    $("aistatus").innerHTML="Step 2/4: AUTEUR plan (Groq)...";
-    const tr=rawCaps.map(s=>"["+s.from.toFixed(1)+"-"+s.to.toFixed(1)+"s] "+s.text).join("\n").slice(0,6000);
-    const sys="You are AUTEUR, an expert AI reel editor. You get a video transcript (with file-timeline timestamps) and edit instructions. Return ONLY valid JSON, no other text, schema: {\"hook\":string,\"hook_anim\":\"fade\"|\"slide\"|\"pop\"|\"type\"|\"none\",\"trim\":{\"start\":number|null,\"end\":number|null},\"speed\":0.5|1|1.5|2,\"captions\":{\"size\":18-60,\"color\":\"#fff\"|\"#ff4444\"|\"#ffe600\"|\"#00e5ff\",\"pos\":\"bottom\"|\"center\"|\"top\"},\"filters\":{\"brightness\":number,\"contrast\":number,\"sat\":number,\"bw\":boolean},\"overlays\":array up to 3 {\"prompt\":string,\"from\":number,\"to\":number,\"fx\":\"cover\"|\"fade\"|\"pip\"},\"notes\":short Hinglish summary}. Rules: trim drops weak intros/fillers and keeps the strongest hook-to-payoff section (max ~60 seconds for reels). overlays visualize key moments using from/to in ORIGINAL file timeline. Instructions: ";
-    const r=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+key},body:JSON.stringify({model:"openai/gpt-oss-120b",response_format:{type:"json_object"},messages:[{role:"system",content:sys+p},{role:"user",content:"Video duration: "+v.duration.toFixed(1)+"s. Transcript:\n"+(tr||"(no speech - plan visuals only)")}],temperature:0.7})});
-    if(!r.ok)throw new Error((await r.text()).slice(0,160));
-    const d=await r.json();
-    let plan;try{plan=JSON.parse(d.choices[0].message.content);}catch(e){const m=(d.choices[0].message.content||"").match(/\{[\s\S]*\}/);if(!m)throw new Error("plan parse fail");plan=JSON.parse(m[0]);}
-    $("aibar").style.width="60%";
-    $("aistatus").innerHTML="Step 3/4: Plan apply...";
-    await applyPlan(plan);
-    $("aibar").style.width="100%";
-    $("aistatus").innerHTML="<b class='ok'>&#10004; AUTEUR edit ready!</b> "+(plan.notes||"")+" <br>Ab PREVIEW CUT dekho, chaho to tweak karo, phir EXPORT.";
-  }catch(e){$("aistatus").innerHTML="<b class='err'>&#10008; "+e.message+"</b>";}
-  $("aibtn").disabled=false;setTimeout(()=>{$("aibar").style.width="0%"},4000);
+function fitCover(img,W,H,zoom){
+  const sc=Math.max(W/img.width,H/img.height)*(zoom||1);
+  const w=img.width*sc,h=img.height*sc;
+  return [img,(W-w)/2,(H-h)/2,w,h];
 }
-async function applyPlan(p){
-  if(p.trim&&v.duration){
-    const s=Math.max(0,Math.min(p.trim.start||0,v.duration-1));
-    const e=Math.min(p.trim.end||v.duration,v.duration);
-    trimS=s;trimE=Math.max(e,s+1);$("tstart").value=trimS.toFixed(1);$("tend").value=trimE.toFixed(1);
-  }
-  if(p.speed){$("speedsel").value=String(p.speed);v.playbackRate=+p.speed||1;}
-  if(p.captions){capSize=Math.max(18,Math.min(p.captions.size||34,60));capColor=p.captions.color||capColor;capPos=p.captions.pos||capPos;$("capsize").value=capSize;var cc=$("capcolor");if(cc){cc.value=capColor;}var cp=$("cappos");if(cp){cp.value=capPos;}}
-  if(p.filters){fB=p.filters.brightness||100;fC=p.filters.contrast||100;fS=p.filters.sat||100;fBW=!!p.filters.bw;$("fb").value=fB;$("fc").value=fC;$("fs").value=fS;var bwel=$("fbw");if(bwel)bwel.checked=fBW;}
-  remapCaps();
-  if(p.hook){$("ttext").value=p.hook;$("tanim").value=p.hook_anim||"pop";}
-  overlays=[];
-  const list=(p.overlays||[]).slice(0,3);
-  for(let i=0;i<list.length;i++){
-    const o=list[i];
-    $("aistatus").innerHTML="Step 4/4: B-roll "+(i+1)+"/"+list.length+" - "+String(o.prompt).slice(0,40)+"...";
-    try{await addBroll(o.prompt,Math.max(0,o.from||trimS),Math.min(o.to||trimE,trimE+trimS),o.fx||"cover");}catch(e){}
-  }
-  renderOvrs();
-  var ci=$("cutinfo");if(ci){ci.textContent="Cut length: "+(trimE-trimS).toFixed(1)+"s";}
-}
-async function genBroll(){
-  const p=$("brollprompt").value.trim();
-  if(!p){alert("B-roll ke liye kya dikhana hai? likho");return;}
-  $("brollprompt").disabled=true;
-  try{
-    const r=await fetch("https://image.pollinations.ai/prompt/"+encodeURIComponent(p+", cinematic, high quality")+"?width=1280&height=720&nologo=true&seed="+Math.floor(Math.random()*99999));
-    const blob=await r.blob();
-    const img=new Image();img.onload=()=>{addOverlay(img,p.slice(0,18));$("brollprompt").disabled=false;};
-    img.src=URL.createObjectURL(blob);
-  }catch(e){alert("Generate fail: "+e.message);$("brollprompt").disabled=false;}
-}
-function addOverlay(img,label){
-  if(overlays.length>=3){alert("Max 3 b-rolls");return;}
-  const dur=(trimE-trimS)||v.duration;
-  overlays.push({img,from:0,to:Math.min(3,dur),fx:"cover",label});
-  renderOvrs();
-}
-function renderOvrs(){
-  $("ovrlist").innerHTML = overlays.map((o,i)=>{
-    const opt=(val,label)=>"<option value='"+val+"'"+(o.fx===val?" selected":"")+">"+label+"</option>";
-    return "<div class='ovr'>["+(i+1)+"] "+o.label+
-      " | from <input type='number' value='"+o.from.toFixed(1)+"' step='0.5' style='width:64px' onchange='overlays["+i+"].from=+this.value'>"+
-      " to <input type='number' value='"+o.to.toFixed(1)+"' step='0.5' style='width:64px' onchange='overlays["+i+"].to=+this.value'> s"+
-      " <select onchange='overlays["+i+"].fx=this.value'>"+
-      opt("cover","Cover+zoom (Ken Burns)")+opt("fade","Fade only")+opt("pip","Small corner (PiP)")+"</select>"+
-      " <button class='btn small ghost' onclick='overlays.splice("+i+",1);renderOvrs()'>X</button></div>";
-  }).join("");
-}
-function drawOverlays(t){
-  overlays.forEach(o=>{
-    if(t<o.from||t>o.to)return;
-    const el=t-o.from,span=Math.max(0.2,o.to-o.from);
-    let a=Math.min(1,el/0.5)*Math.min(1,(o.to-t)/0.5);
+function draw(t){
+  const W=stage.width,H=stage.height;
+  ctx.filter=(fBW?"grayscale(1) ":"")+"brightness("+fB+"%) contrast("+fC+"%) saturate("+fS+"%)";
+  try{ctx.drawImage(vid,0,0,W,H);}catch(e){}
+  ctx.filter="none";
+  for(const o of overlays){
+    if(t<o.from||t>o.to)continue;
+    const dur=o.to-o.from||1;const local=t-o.from;
+    let al=Math.min(1,local/0.4)*Math.min(1,(o.to-t)/0.4);
+    ctx.globalAlpha=Math.max(0,Math.min(1,al));
     if(o.fx==="pip"){
-      const w=stage.width*0.28,h=w*o.img.height/o.img.width;
-      ctx.globalAlpha=a;
-      ctx.drawImage(o.img,stage.width-w-12,12,w,h);
-      ctx.strokeStyle="#ff4444";ctx.lineWidth=2;ctx.strokeRect(stage.width-w-12,12,w,h);
-      ctx.globalAlpha=1;return;
+      const w=W*0.26,h=w*9/16;
+      ctx.drawImage(o.img,W-w-14,14,w,h);
+    }else{
+      const zoom=o.fx==="fade"?1:1+0.10*(local/dur);
+      const[im,x,y,w,h]=fitCover(o.img,W,H,zoom);ctx.drawImage(im,x,y,w,h);
     }
-    const zoom=o.fx==="cover"?(1+0.10*Math.min(1,el/span)):1;
-    const iw=stage.width*zoom,ih=stage.height*zoom;
-    ctx.globalAlpha=a*0.95;
-    ctx.drawImage(o.img,(stage.width-iw)/2,(stage.height-ih)/2,iw,ih);
     ctx.globalAlpha=1;
-  });
-}
-function drawText(t){
-  const txt=$("ttext").value;if(!txt)return;
-  const from=+$("tfrom").value,to=+$("tto").value;
-  if(t<from||t>to)return;
-  const el=t-from,span=Math.max(0.1,to-from);
-  const pos=$("tpos").value,anim=$("tanim").value,fs=+$("tsize").value*(stage.width/1280)*1.6;
-  let a=1,dy=0,sc=1,out=txt;
-  if(anim==="fade")a=Math.min(1,el/0.6)*Math.min(1,(to-t)/0.6);
-  if(anim==="slide"){a=Math.min(1,el/0.6);dy=(1-Math.min(1,el/0.6))*40;}
-  if(anim==="pop")sc=0.7+0.3*Math.min(1,el/0.35)+Math.sin(el*6)*0.015;
-  if(anim==="type")out=txt.slice(0,Math.floor(txt.length*Math.min(1,el/span*1.4)));
-  ctx.save();
-  ctx.font="700 "+fs+"px Rajdhani,Arial";ctx.textAlign="center";
-  ctx.globalAlpha=a;
-  const y=(pos==="top"?fs*1.3:pos==="center"?stage.height/2+fs*0.35:stage.height-fs*0.5)+dy;
-  ctx.translate(stage.width/2,y);ctx.scale(sc,sc);
-  ctx.lineWidth=fs*0.18;ctx.strokeStyle="rgba(0,0,0,.85)";ctx.lineJoin="round";
-  ctx.strokeText(out,0,0);ctx.fillStyle="#fff";ctx.fillText(out,0,0);
-  ctx.restore();
-}
-
-/* ---------------- DRAW LOOP ---------------- */
-function draw(){
-  if(!v.paused||exporting||true){
-    ctx.filter=(fBW?"grayscale(1) ":"")+"brightness("+fB+"%) contrast("+fC+"%) saturate("+fS+"%)";
-    if(v.src)ctx.drawImage(v,0,0,stage.width,stage.height);
-    else{ctx.fillStyle="#0a0a0a";ctx.fillRect(0,0,stage.width,stage.height);
-      ctx.fillStyle="#ff4444";ctx.font="700 28px Rajdhani";ctx.textAlign="center";
-      ctx.fillText("LOAD VIDEO TO BEGIN",stage.width/2,stage.height/2);}
-    ctx.filter="none";
-    if(v.duration){
-      const spd=+($("speedsel").value)||1;
-      const t=(v.currentTime-trimS)/spd;
-      drawOverlays(t);drawText(t);drawCaps(t,(trimE-trimS)/spd);
-      $("ctime").textContent=v.currentTime.toFixed(1)+"s";
-    }
   }
-  requestAnimationFrame(draw);
+  if(hookText&&t<Math.min(6,(trimE-trimS)/spd)){
+    const fs=Math.round(W/16);const prog=t;
+    let scale=1,alpha=1,dy=0;
+    if(hookAnim==="pop"){scale=1+Math.max(0,0.25-prog*0.5);}
+    if(hookAnim==="fade"){alpha=Math.max(0,1-prog/1.2);}
+    if(hookAnim==="slide"){dy=Math.max(0,(1-Math.min(1,prog*2)))*60;}
+    if(hookAnim==="typewriter"){alpha=1;}
+    ctx.save();ctx.globalAlpha=alpha;
+    ctx.translate(W/2,H*0.16+dy);ctx.scale(scale,scale);
+    ctx.font="800 "+fs+"px system-ui";ctx.textAlign="center";
+    let txt=hookText;if(hookAnim==="typewriter"){const n=Math.floor(prog*14);txt=txt.slice(0,n);}
+    ctx.lineWidth=fs/6;ctx.strokeStyle="rgba(0,0,0,.85)";ctx.strokeText(txt,0,0);
+    ctx.fillStyle="#ffffff";ctx.fillText(txt,0,0);
+    ctx.restore();
+  }
+  for(const c of caps){
+    if(t<c.from||t>c.to)continue;
+    const fs=Math.round(W*capSize/1280*1.6);
+    const pop=1+Math.max(0,0.18-(t-c.from)*1.2);
+    const words=c.text.split(/\s+/);const lines=[];
+    for(let i=0;i<words.length;i+=4)lines.push(words.slice(i,i+4).join(" "));
+    const yy=capPos==="center"?H/2:capPos==="top"?H*0.28:H-fs*lines.length*1.5-20;
+    ctx.save();ctx.translate(W/2,yy);ctx.scale(pop,pop);
+    ctx.font="800 "+fs+"px system-ui";ctx.textAlign="center";
+    lines.forEach((ln,i)=>{
+      const y=i*fs*1.35;
+      ctx.lineWidth=fs/5.5;ctx.strokeStyle="rgba(0,0,0,.9)";ctx.strokeText(ln,0,y);
+      ctx.fillStyle=capColor;ctx.fillText(ln,0,y);
+    });
+    ctx.restore();break;
+  }
 }
-
-/* ---------------- EXPORT ---------------- */
-async function exportVideo(){
-  if(!v.src)return;
-  updateTrim();
-  if(exporting)return;exporting=true;$("xbtn").disabled=true;
-  try{
-    actx&&actx.resume();
-    const spd=+($("speedsel").value)||1;
-    v.playbackRate=spd;
-    if(muteOrig&&vidGain)vidGain.gain.value=0;
-    if(!muteOrig&&vidGain)vidGain.gain.value=1;
-    const stream=stage.captureStream(30);
-    (recNode?recNode.stream.getAudioTracks():[]).forEach(tr=>stream.addTrack(tr));
-    const mimes=["video/mp4;codecs=avc1.64003E,mp4a.40.2","video/mp4","video/webm;codecs=vp9,opus","video/webm"];
-    const mime=mimes.find(m=>window.MediaRecorder&&MediaRecorder.isTypeSupported(m))||"";
-    const rec=new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:6000000}:{});
-    const chunks=[];rec.ondataavailable=e=>chunks.push(e.data);
-    const done=new Promise(r=>rec.onstop=r);
-    v.currentTime=trimS;music.currentTime=0;
-    if(music.src)music.play();
-    rec.start(500);
-    await v.play();
-    const total=(trimE-trimS)/spd;
-    const timer=setInterval(()=>{
-      const p=Math.min(100,((v.currentTime-trimS)/spd/total)*100);
-      $("xbar").style.width=p+"%";
-      $("xstatus").innerHTML="RECORDING... "+p.toFixed(0)+"% ( tab open rakho )";
-      if(v.currentTime>=trimE-0.05||v.ended){clearInterval(timer);
-        v.pause();music.pause();setTimeout(()=>rec.stop(),300);}
-    },300);
-    await done;
-    const blob=new Blob(chunks,{type:rec.mimeType||"video/webm"});
-    const ext=(rec.mimeType||"").includes("mp4")?"mp4":"webm";
-    const url=URL.createObjectURL(blob);
-    const dl=$("xdl");dl.href=url;dl.download="ultron-cut."+ext;dl.style.display="inline-block";dl.textContent="DOWNLOAD ("+(blob.size/1048576).toFixed(1)+"MB "+ext+")";
-    $("xstatus").innerHTML="<b class='ok'>&#10004; EXPORT DONE!</b> DOWNLOAD button dabao.";
-    $("xbar").style.width="100%";
-  }catch(e){$("xstatus").innerHTML="<b class='err'>"+e.message+"</b>";}
-  exporting=false;$("xbtn").disabled=false;
+async function exportEdit(key){
+  const dur=(trimE-trimS)/spd;
+  const AC=window.AudioContext||window.webkitAudioContext;const actx=new AC();await actx.resume();
+  const dest=actx.createMediaStreamDestination();
+  const vSrc=actx.createMediaElementSource(vid);const vGain=actx.createGain();
+  vGain.gain.value=muted?0:1;vSrc.connect(vGain);vGain.connect(dest);vGain.connect(actx.destination);
+  if(mURL){const mSrc=actx.createMediaElementSource(mus);const mGain=actx.createGain();mGain.gain.value=0.55;mSrc.connect(mGain);mGain.connect(dest);mGain.connect(actx.destination);}
+  const stream=stage.captureStream(30);
+  dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
+  const cand=["video/mp4;codecs=avc1.64003E,mp4a.40.2","video/mp4","video/webm;codecs=vp9,opus","video/webm"];
+  const mime=cand.find(t=>{try{return MediaRecorder.isTypeSupported(t);}catch(e){return false;}})||"";
+  const rec=new MediaRecorder(stream,{mimeType:mime||undefined,videoBitsPerSecond:6000000});
+  const chunks=[];rec.ondataavailable=e=>chunks.push(e.data);
+  const stopped=new Promise(res=>rec.onstop=()=>res(new Blob(chunks,{type:mime||"video/webm"})));
+  vid.currentTime=trimS;vid.playbackRate=spd;vid.muted=true;
+  await new Promise(r=>{if(vid.readyState>=2)r();else vid.oncanplay=r;});
+  await vid.play();rec.start(250);
+  await new Promise(res=>{
+    const loop=()=>{
+      const t=(vid.currentTime-trimS)/spd;
+      draw(Math.max(0,t));
+      $("pbar").style.width=Math.min(95,80+t/dur*15)+"%";
+      $("pnote").textContent="Rendering... "+t.toFixed(1)+"s / "+dur.toFixed(1)+"s (tab khula rakho)";
+      if(vid.currentTime>=trimE||vid.ended||vid.paused){res();}else requestAnimationFrame(loop);
+    };loop();
+  });
+  vid.pause();try{rec.stop();}catch(e){}
+  try{await actx.close();}catch(e){}
+  return await stopped;
 }
-draw();
 </script>
 </body>
 </html>
