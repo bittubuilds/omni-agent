@@ -2,284 +2,364 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ULTRON CUT - Video Editor</title>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#050505; --panel:#0d0d0d; --line:#2a1111; --line2:#3d1515; --red:#ff0000; --red2:#ff3333; --dim:#a0a0a0; }
-  * { box-sizing:border-box; margin:0; padding:0; font-family:'Rajdhani',sans-serif; }
-  html,body { height:100%; }
-  body { background:var(--bg); color:#fff; padding:12px; padding-bottom:24px; overflow-y:auto; }
-  a.back { color:var(--red2); text-decoration:none; font-weight:700; letter-spacing:1px; font-size:.8rem; }
-  h1 { font-size:1.35rem; letter-spacing:2px; margin:6px 0 2px; }
-  h1 span { color:var(--red); }
-  .sub { color:var(--dim); font-size:.72rem; letter-spacing:1px; margin-bottom:12px; }
-  .panel { background:var(--panel); border:1px solid var(--line); padding:12px; margin-bottom:12px; position:relative; }
-  .panel::before { content:""; position:absolute; top:0; left:0; width:10px; height:10px; border-top:1px solid var(--red); border-left:1px solid var(--red); }
-  .panel::after { content:""; position:absolute; bottom:0; right:0; width:10px; height:10px; border-bottom:1px solid var(--red); border-right:1px solid var(--red); }
-  .ptitle { color:var(--red2); font-size:.78rem; font-weight:700; letter-spacing:2px; margin-bottom:10px; }
-  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:8px; }
-  label { font-size:.7rem; color:var(--dim); letter-spacing:1px; }
-  input[type=text],input[type=number],input[type=file],select {
-    background:#000; border:1px solid var(--line2); color:#fff; padding:8px; font-size:.85rem; border-radius:2px; max-width:100%;
-  }
-  input[type=range] { accent-color:var(--red); width:130px; }
-  button { background:var(--red); color:#fff; border:none; padding:10px 16px; font-weight:700; letter-spacing:1px; cursor:pointer; font-size:.8rem; border-radius:2px; }
-  button.ghost { background:transparent; border:1px solid var(--line2); color:#fff; }
-  button.ghost:hover { border-color:var(--red); }
-  button:disabled { opacity:.35; cursor:not-allowed; }
-  canvas { width:100%; max-width:640px; display:block; background:#000; border:1px solid var(--line2); }
-  video, audio { display:none; }
-  #stage { position:relative; }
-  .statusline { font-size:.72rem; color:var(--dim); margin-top:6px; letter-spacing:1px; }
-  #bar { height:6px; background:#1a0808; border:1px solid var(--line2); margin-top:8px; }
-  #barfill { height:100%; width:0%; background:linear-gradient(90deg,#800,#f00); }
-  .val { color:#fff; font-weight:700; }
-  a.dl { display:none; margin-top:10px; color:#fff; background:linear-gradient(90deg,#5a0000,#b00000); padding:12px; text-decoration:none; font-weight:700; letter-spacing:1px; text-align:center; border:1px solid var(--red); }
-  .chips { display:flex; flex-wrap:wrap; gap:6px; }
-  .chips button { padding:6px 10px; font-size:.7rem; }
+:root{--red:#ff2222;--red2:#ff4444;--bg:#050505;--panel:#0d0d0d;--line:#2a1212;--line2:#3d1a1a;--txt:#fff;--dim:#a08a8a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:Rajdhani,sans-serif;min-height:100vh}
+header{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
+.logo{font-weight:700;font-size:1.25rem;letter-spacing:2px}
+.logo b{color:var(--red2)}
+.back{color:var(--dim);text-decoration:none;font-size:.85rem;border:1px solid var(--line2);padding:6px 10px;border-radius:4px}
+main{max-width:900px;margin:0 auto;padding:12px}
+.card{border:1px solid var(--line2);background:var(--panel);padding:12px;margin-bottom:12px;border-radius:6px}
+.card h3{margin:0 0 10px;font-size:.85rem;letter-spacing:2px;color:var(--red2)}
+canvas#stage{width:100%;background:#000;border:1px solid var(--line2);border-radius:4px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+label{font-size:.75rem;color:var(--dim)}
+input[type=text],input[type=number],select{background:#111;border:1px solid var(--line2);color:var(--txt);padding:8px;border-radius:4px;font-family:inherit;font-size:.85rem}
+input[type=number]{width:90px}
+input[type=file]{display:none}
+.btn{background:#1a0a0a;border:1px solid var(--red);color:var(--txt);padding:9px 16px;border-radius:4px;font-family:inherit;font-weight:600;font-size:.85rem;letter-spacing:1px;cursor:pointer}
+.btn:disabled{opacity:.4}
+.btn.primary{background:var(--red)}
+.btn.small{padding:5px 10px;font-size:.75rem}
+.btn.ghost{border-color:var(--line2);color:var(--dim)}
+input[type=range]{width:140px;accent-color:var(--red)}
+.status{font-size:.8rem;color:var(--dim);line-height:1.5}
+.status b{color:var(--txt)}
+.ok{color:#4caf50}.err{color:var(--red2)}
+.ovr{border:1px dashed var(--line2);padding:8px;margin:8px 0;border-radius:4px;font-size:.8rem}
+.bar{height:6px;background:#1a0a0a;border-radius:3px;overflow:hidden;margin:8px 0}
+.bar>div{height:100%;background:var(--red);width:0%}
+#capslist,#ovrlist{max-height:150px;overflow-y:auto}
+footer{text-align:center;color:var(--dim);font-size:.7rem;letter-spacing:2px;padding:8px;border-top:1px solid var(--line)}
 </style>
 </head>
 <body>
-<a class="back" href="index.html">◀ BACK TO ULTRON</a>
-<h1>ULTRON <span>CUT</span></h1>
-<div class="sub">VIDEO EDITOR · 100% LOCAL · NO UPLOAD · NO STORAGE USED</div>
-
-<div class="panel">
-  <div class="ptitle">1 · LOAD FOOTAGE</div>
-  <div class="row">
-    <input type="file" id="vfile" accept="video/*">
-    <button class="ghost" id="pickBtn" onclick="document.getElementById('vfile').click()">SELECT VIDEO</button>
-  </div>
-  <div class="row">
-    <label>MUSIC (optional)</label>
-    <input type="file" id="afile" accept="audio/*">
-    <label>Music vol</label>
-    <input type="range" id="mvol" min="0" max="100" value="60">
-    <span class="val" id="mvv">60%</span>
-    <label><input type="checkbox" id="muteorig"> Mute original audio</label>
-  </div>
-  <div id="stage">
-    <canvas id="cv"></canvas>
-    <video id="vid" playsinline crossorigin="anonymous"></video>
-    <audio id="mus" crossorigin="anonymous"></audio>
-  </div>
-  <div class="statusline" id="vinfo">No video loaded.</div>
+<header><span class="logo">ULTRON <b>CUT</b></span><span class="status" id="fileinfo">no video loaded</span><a class="back" href="index.html">&larr; ULTRON</a></header>
+<main>
+<div class="card"><h3>&#9654; STAGE</h3><canvas id="stage" width="1280" height="720"></canvas>
+<div class="row"><button class="btn small" onclick="vplay()">PLAY</button><button class="btn small" onclick="vpause()">PAUSE</button><button class="btn small ghost" onclick="vseekTrim()">GO TO START</button><label>Time <span id="ctime">0.0s</span></label></div>
+<div class="row"><input type="file" id="vfile" accept="video/*"><button class="btn" onclick="document.getElementById('vfile').click()">LOAD VIDEO</button>
+<input type="file" id="mfile" accept="audio/*"><button class="btn ghost" onclick="document.getElementById('mfile').click()">MUSIC</button>
+<input type="file" id="capfile" accept="audio/*,video/*"></div>
 </div>
 
-<div class="panel">
-  <div class="ptitle">2 · TRIM</div>
-  <div class="row">
-    <label>START (sec)</label><input type="number" id="tstart" value="0" min="0" step="0.1" style="width:80px">
-    <button class="ghost" onclick="markNow('tstart')">SET = NOW</button>
-    <label>END (sec)</label><input type="number" id="tend" value="0" min="0" step="0.1" style="width:80px">
-    <button class="ghost" onclick="markNow('tend')">SET = NOW</button>
-  </div>
-  <div class="chips">
-    <button class="ghost" onclick="seekTo(document.getElementById('tstart').value*1)">GO TO START</button>
-    <button class="ghost" onclick="seekTo(document.getElementById('tend').value*1)">GO TO END</button>
-    <button class="ghost" onclick="playPreview()">▶ PREVIEW CUT</button>
-  </div>
-  <div class="statusline">Playhead: <span class="val" id="ptime">0.0s</span> — preview shows the exact export result.</div>
-</div>
+<div class="card"><h3>&#9986; CUT (TRIM)</h3>
+<div class="row"><label>Start(s)</label><input type="number" id="tstart" value="0" step="0.1" min="0"><button class="btn small ghost" onclick="setNow('tstart')">SET=NOW</button>
+<label>End(s)</label><input type="number" id="tend" value="0" step="0.1" min="0"><button class="btn small ghost" onclick="setNow('tend')">SET=NOW</button>
+<button class="btn small" onclick="previewCut()">PREVIEW CUT</button></div>
+<div class="status" id="cutinfo"></div></div>
 
-<div class="panel">
-  <div class="ptitle">3 · TEXT OVERLAY</div>
-  <div class="row">
-    <input type="text" id="ttext" placeholder="Title text..." style="flex:1;min-width:160px">
-    <select id="tpos"><option value="top">TOP</option><option value="center">CENTER</option><option value="bottom">BOTTOM</option></select>
-  </div>
-  <div class="row">
-    <label>Size</label><input type="range" id="tsize" min="16" max="120" value="48">
-    <span class="val" id="tsv">48px</span>
-    <label>Color</label>
-    <select id="tcol"><option value="#ffffff">WHITE</option><option value="#ff0000">RED</option><option value="#000000">BLACK</option><option value="#ffee00">YELLOW</option></select>
-    <label>Outline</label><input type="checkbox" id="toutline" checked>
-  </div>
-  <div class="row">
-    <label>Text from (s)</label><input type="number" id="tfrom" value="0" step="0.1" style="width:70px">
-    <label>to (s)</label><input type="number" id="tto" value="10" step="0.1" style="width:70px">
-  </div>
-</div>
+<div class="card"><h3>&#128172; AUTO CAPTIONS (Whisper AI)</h3>
+<div class="row"><button class="btn primary" id="capbtn" onclick="genCaptions()">&#127908; GENERATE CAPTIONS</button>
+<label>Size</label><input type="range" id="capsize" min="18" max="60" value="34" oninput="capSize=this.value">
+<label>Color</label><select id="capcolor" onchange="capColor=this.value"><option value="#fff">White</option><option value="#ff4444">Red</option><option value="#ffe600">Yellow</option><option value="#00e5ff">Cyan</option></select>
+<label>Pos</label><select id="cappos" onchange="capPos=this.value"><option value="bottom">Bottom</option><option value="center">Center</option><option value="top">Top</option></select>
+<button class="btn small ghost" onclick="capsOn=!capsOn">ON/OFF</button></div>
+<div class="bar"><div id="capbar"></div></div>
+<div class="status" id="capstatus">Groq Whisper se captions automatic banenge ( tumhara hi API key, free tier ).</div>
+<div id="capslist"></div></div>
 
-<div class="panel">
-  <div class="ptitle">4 · LOOK &amp; SPEED</div>
-  <div class="row">
-    <label>Speed</label>
-    <select id="speed"><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option></select>
-    <label><input type="checkbox" id="bw"> B&amp;W</label>
-  </div>
-  <div class="row">
-    <label>Bright</label><input type="range" id="bright" min="30" max="200" value="100"><span class="val" id="bv">100</span>
-    <label>Contrast</label><input type="range" id="contr" min="30" max="200" value="100"><span class="val" id="cv2">100</span>
-    <label>Satur.</label><input type="range" id="sat" min="0" max="200" value="100"><span class="val" id="sv">100</span>
-  </div>
-</div>
+<div class="card"><h3>&#127916; B-ROLL &amp; MOTION GRAPHICS</h3>
+<div class="row"><input type="text" id="brollprompt" placeholder="AI b-roll: futuristic city at night..." style="flex:1;min-width:160px">
+<button class="btn primary" onclick="genBroll()">&#10024; GENERATE</button>
+<input type="file" id="bfile" accept="image/*"><button class="btn ghost" onclick="document.getElementById('bfile').click()">UPLOAD IMAGE</button></div>
+<div class="status">AI image free (Pollinations). Har b-roll pe motion effect: ken burns zoom + fade.</div>
+<div id="ovrlist"></div></div>
 
-<div class="panel">
-  <div class="ptitle">5 · EXPORT</div>
-  <button id="exportBtn" disabled>⬇ EXPORT VIDEO</button>
-  <div id="bar"><div id="barfill"></div></div>
-  <div class="statusline" id="estatus">Export runs in real time (a 30s cut takes ~30s). Keep this tab open.</div>
-  <a class="dl" id="dlink" download="ultron-cut.webm">✔ EXPORT READY — TAP TO SAVE</a>
-</div>
+<div class="card"><h3>&#128221; TEXT OVERLAY + ANIMATION</h3>
+<div class="row"><input type="text" id="ttext" placeholder="Title text..." style="flex:1;min-width:160px">
+<label>Pos</label><select id="tpos"><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select>
+<label>Anim</label><select id="tanim"><option value="none">None</option><option value="fade">Fade</option><option value="slide">Slide up</option><option value="pop">Pop</option><option value="type">Typewriter</option></select>
+<label>Size</label><input type="range" id="tsize" min="20" max="90" value="48"></div>
+<div class="row"><label>From(s)</label><input type="number" id="tfrom" value="0" step="0.1"><label>To(s)</label><input type="number" id="tto" value="3" step="0.1"></div></div>
 
+<div class="card"><h3>&#127925; AUDIO + SPEED + FILTERS</h3>
+<div class="row"><label>Music vol</label><input type="range" id="mvol" min="0" max="100" value="60" oninput="mGain&&(mGain.gain.value=this.value/100)">
+<button class="btn small ghost" onclick="muteOrig=!muteOrig">MUTE ORIGINAL</button>
+<label>Speed</label><select id="speedsel" onchange="v.playbackRate=+this.value"><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option></select></div>
+<div class="row"><label>Bright</label><input type="range" id="fb" min="50" max="150" value="100" oninput="fB=this.value">
+<label>Contrast</label><input type="range" id="fc" min="50" max="150" value="100" oninput="fC=this.value">
+<label>Sat</label><input type="range" id="fs" min="0" max="200" value="100" oninput="fS=this.value">
+<label><input type="checkbox" id="fbw" onchange="fBW=this.checked"> B&amp;W</label></div></div>
+
+<div class="card"><h3>&#128190; EXPORT</h3>
+<div class="bar"><div id="xbar"></div></div>
+<div class="row"><button class="btn primary" id="xbtn" onclick="exportVideo()" disabled>&#11014; EXPORT VIDEO</button><a id="xdl" class="btn ghost" style="display:none" download="ultron-cut.mp4">DOWNLOAD</a></div>
+<div class="status" id="xstatus">Load video first. Export real-time me chalta hai ( 30s cut = 30s export ).</div></div>
+</main>
+<footer>ULTRON CUT v2 | CAPTIONS | B-ROLL | MOTION FX | FREE FOREVER</footer>
 <script>
-const vid = document.getElementById("vid"), mus = document.getElementById("mus");
-const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
-const $ = (id) => document.getElementById(id);
-let ready = false, recording = false, actx = null, mixDest = null, vGain = null, mGain = null;
+const $=id=>document.getElementById(id);
+const v=document.createElement("video"); v.crossOrigin="anonymous"; v.muted=false;
+const music=document.createElement("audio");
+const stage=$("stage"),ctx=stage.getContext("2d");
+let trimS=0,trimE=0,muteOrig=false,capSize=34,capColor="#fff",capPos="bottom",capsOn=true,caps=[],capsBusy=false;
+let mGain=null,vidGain=null,actx=null,recNode=null;
+let overlays=[],fB=100,fC=100,fS=100,fBW=false,exporting=false;
 
-$("mvol").oninput = () => { $("mvv").textContent = $("mvol").value + "%"; if (mGain) mGain.gain.value = $("mvol").value / 100 * 0.9; };
-$("tsize").oninput = () => $("tsv").textContent = $("tsize").value + "px";
-$("bright").oninput = () => $("bv").textContent = $("bright").value;
-$("contr").oninput = () => $("cv2").textContent = $("contr").value;
-$("sat").oninput = () => $("sv").textContent = $("sat").value;
+$("vfile").onchange=e=>{const f=e.target.files[0];if(!f)return;v.src=URL.createObjectURL(f);v.onloadedmetadata=()=>{
+  trimS=0;trimE=v.duration;$("tstart").value=0;$("tend").value=v.duration.toFixed(1);
+  const w=Math.min(1280,v.videoWidth),h=Math.round(w*v.videoHeight/v.videoWidth);
+  stage.width=w;stage.height=h;
+  initAudio();
+  $("fileinfo").innerHTML="&#9679; <b>"+f.name.slice(0,24)+"</b> ("+(f.size/1048576).toFixed(1)+"MB, "+v.duration.toFixed(1)+"s)";
+  $("cutinfo").textContent="Cut length: "+(trimE-trimS).toFixed(1)+"s";
+  $("xbtn").disabled=false;
+  v.currentTime=trimS;draw();
+};};
 
-function markNow(id) {
-  if (!ready) return alert("Pehle video load karo.");
-  $(id).value = vid.currentTime.toFixed(1);
-}
-function seekTo(t) {
-  if (!ready) return;
-  vid.currentTime = Math.max(0, Math.min(t, vid.duration || 0));
-}
-function clampTrim() {
-  const d = vid.duration || 0;
-  let a = Math.max(0, +$("tstart").value || 0);
-  let b = Math.min(d, +$("tend").value || d);
-  if (b - a < 0.5) b = Math.min(d, a + 0.5);
-  $("tstart").value = a.toFixed(1); $("tend").value = b.toFixed(1);
-  return [a, b];
-}
-function playPreview() {
-  if (!ready) return alert("Pehle video load karo.");
-  if (recording) return;
-  const [a, b] = clampTrim();
-  vid.playbackRate = +$("speed").value;
-  vid.currentTime = a;
-  vid.play();
-  mus.currentTime = 0; mus.playbackRate = +$("speed").value;
-  mus.currentTime = a / vid.playbackRate; mus.play();
-  const stop = () => { if (vid.currentTime >= b) { vid.pause(); mus.pause(); clearInterval(iv); } };
-  const iv = setInterval(stop, 80);
-}
-
-$("vfile").onchange = (e) => {
-  const f = e.target.files[0]; if (!f) return;
-  vid.src = URL.createObjectURL(f);
-  vid.load();
-  vid.onloadedmetadata = () => {
-    ready = true;
-    let w = vid.videoWidth, h = vid.videoHeight;
-    const cap = 1280; if (w > cap) { h = Math.round(h * cap / w); w = cap; }
-    cv.width = w; cv.height = h;
-    $("tstart").value = "0";
-    $("tend").value = vid.duration.toFixed(1);
-    $("tto").value = Math.min(10, vid.duration).toFixed(1);
-    $("vinfo").textContent = Math.round(w) + "x" + Math.round(h) + " · " + vid.duration.toFixed(1) + "s · " + (f.size / 1048576).toFixed(1) + "MB";
-    $("exportBtn").disabled = false;
-    setupAudio();
-    drawLoop();
-  };
-};
-$("afile").onchange = (e) => {
-  const f = e.target.files[0]; if (!f) return;
-  mus.src = URL.createObjectURL(f); mus.load();
-};
-
-function setupAudio() {
-  try {
-    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
-    actx.resume();
-    if (!mixDest) {
-      mixDest = actx.createMediaStreamDestination();
-      try { const vs = actx.createMediaElementSource(vid); vGain = actx.createGain(); vs.connect(vGain); vGain.connect(mixDest); vGain.connect(actx.destination); } catch (err) {}
-      try { const ms = actx.createMediaElementSource(mus); mGain = actx.createGain(); ms.connect(mGain); mGain.connect(mixDest); mGain.connect(actx.destination); } catch (err) {}
-      mGain.gain.value = $("mvol").value / 100 * 0.9;
+function initAudio(){
+  try{
+    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    if(!recNode){
+      const src=actx.createMediaElementSource(v),mg=actx.createMediaElementSource(music);
+      recNode=actx.createMediaStreamDestination();
+      vidGain=actx.createGain();mGain=actx.createGain();
+      src.connect(vidGain);mg.connect(mGain);
+      vidGain.connect(actx.destination);mGain.connect(actx.destination);
+      vidGain.connect(recNode);mGain.connect(recNode);
     }
-  } catch (err) { console.warn("audio", err); }
+  }catch(e){}
 }
 
-function filterStr() {
-  const f = "brightness(" + $("bright").value + "%) contrast(" + $("contr").value + "%) saturate(" + ($("bw").checked ? 0 : $("sat").value) + "%)";
-  return f;
+$("mfile").onchange=e=>{const f=e.target.files[0];if(!f)return;music.src=URL.createObjectURL(f);music.loop=true;initAudio();};
+
+function vplay(){actx&&actx.resume();if(music.src&&music.currentTime===0)music.play();v.play();}
+function vpause(){v.pause();music.pause();}
+function vseekTrim(){v.currentTime=trimS;if(music.src)music.currentTime=0;}
+function setNow(id){$(id).value=v.currentTime.toFixed(1);updateTrim();}
+function previewCut(){vseekTrim();vplay();}
+
+$("tstart").onchange=$("tend").onchange=updateTrim;
+function updateTrim(){
+  trimS=Math.max(0,+$("tstart").value||0);
+  trimE=Math.min(v.duration||0,+$("tend").value||0);
+  if(trimE<=trimS)trimE=(v.duration||1);
+  $("cutinfo").textContent="Cut length: "+(trimE-trimS).toFixed(1)+"s";
 }
 
-function drawLoop() {
-  requestAnimationFrame(drawLoop);
-  if (!ready) return;
-  ctx.filter = filterStr();
-  ctx.drawImage(vid, 0, 0, cv.width, cv.height);
-  ctx.filter = "none";
-  const t = vid.currentTime;
-  const from = +$("tfrom").value, to = +$("tto").value;
-  const txt = $("ttext").value.trim();
-  if (txt && t >= from && t <= to) {
-    const size = Math.max(10, +$("tsize").value * cv.width / 640);
-    ctx.font = "700 " + size + "px Rajdhani, sans-serif";
-    ctx.textAlign = "center";
-    const pos = $("tpos").value;
-    let y = pos === "top" ? size * 1.3 : pos === "bottom" ? cv.height - size * 0.6 : cv.height / 2 + size * 0.35;
-    if ($("toutline").checked) {
-      ctx.lineWidth = Math.max(2, size / 12);
-      ctx.strokeStyle = "rgba(0,0,0,.85)";
-      ctx.strokeText(txt, cv.width / 2, y);
+/* ---------------- AUTO CAPTIONS ---------------- */
+async function genCaptions(){
+  if(!v.src){alert("Pehle video load karo");return;}
+  const key=localStorage.getItem("ultron_groq_key");
+  if(!key){alert("Groq key ULTRON app me daalo pehle ( ek baar, wahi key chalegi )");return;}
+  if(capsBusy)return;capsBusy=true;$("capbtn").disabled=true;
+  $("capstatus").innerHTML="Uploading audio to Whisper...";
+  try{
+    let blob=new Blob([await (await fetch(v.src)).blob()],{type:"video/webm"});
+    const orig=$("vfile").files[0];
+    let useFile=orig;
+    if(orig.size>24*1048576){
+      $("capstatus").innerHTML="File badi hai - audio nikal raha hoon ( real time, "+((trimE-trimS)).toFixed(0)+"s )...";
+      blob=await recordAudioOnly();
+      useFile=new File([blob],"audio.webm",{type:"audio/webm"});
+      $("capstatus").innerHTML="Audio ready - Whisper ko bheja...";
     }
-    ctx.fillStyle = $("tcol").value;
-    ctx.fillText(txt, cv.width / 2, y);
+    const fd=new FormData();
+    fd.append("file",useFile);fd.append("model","whisper-large-v3-turbo");
+    fd.append("response_format","verbose_json");
+    $("capbar").style.width="40%";
+    const r=await fetch("https://api.groq.com/openai/v1/audio/transcriptions",{method:"POST",headers:{Authorization:"Bearer "+key},body:fd});
+    if(!r.ok){throw new Error((await r.text()).slice(0,160));}
+    const d=await r.json();
+    const spd=+($("speedsel").value)||1;
+    caps=(d.segments||[]).map(s=>({
+      from:Math.max(0,(s.start-trimS)/spd),
+      to:Math.max(0,(s.end-trimS)/spd),
+      text:(s.text||"").trim()
+    })).filter(s=>s.to>0&&s.from<(trimE-trimS)/spd);
+    renderCapsList();
+    $("capbar").style.width="100%";
+    $("capstatus").innerHTML="<b class='ok'>&#10004; "+caps.length+" captions ready!</b> Preview/Export me dikhenge. ON/OFF se toggle.";
+  }catch(e){
+    $("capstatus").innerHTML="<b class='err'>&#10008; "+e.message+"</b>";
   }
-  $("ptime").textContent = t.toFixed(1) + "s";
-  if (recording) {
-    const [a, b] = clampTrim();
-    $("barfill").style.width = Math.min(100, ((t - a) / Math.max(0.1, b - a)) * 100) + "%";
-  }
+  capsBusy=false;$("capbtn").disabled=false;
+  setTimeout(()=>{$("capbar").style.width="0%"},2500);
+}
+function recordAudioOnly(){
+  return new Promise(res=>{
+    const a2=new (window.AudioContext||window.webkitAudioContext)();
+    const src=a2.createMediaElementSource(v);
+    const dest=a2.createMediaStreamDestination();
+    src.connect(dest); // silent - not to speakers
+    const rec=new MediaRecorder(dest.stream,{mimeType:"audio/webm;codecs=opus"});
+    const chunks=[];rec.ondataavailable=e=>chunks.push(e.data);
+    rec.onstop=()=>{a2.close();res(new Blob(chunks,{type:"audio/webm"}))};
+    v.currentTime=trimS;v.muted=false;
+    rec.start();v.play();
+    const chk=setInterval(()=>{
+      $("capbar").style.width=Math.min(95,((v.currentTime-trimS)/(trimE-trimS)*95))+"%";
+      if(v.currentTime>=trimE||v.ended){clearInterval(chk);v.pause();rec.stop();}
+    },250);
+  });
+}
+function renderCapsList(){
+  const el=$("capslist");el.innerHTML=caps.slice(0,40).map((c,i)=>
+    '<div class="ovr">'+c.from.toFixed(1)+'s-'+c.to.toFixed(1)+'s &nbsp;'+c.text.replace(/</g,"&lt;")+'</div>').join("");
+}
+function drawCaps(t,dur){
+  if(!capsOn||!caps.length)return;
+  const c=caps.find(x=>t>=x.from&&t<=x.to);if(!c)return;
+  const pop=Math.min(1,(t-c.from)/0.18);
+  const fs=capSize*(stage.width/1280)*1.9;
+  const scale=(0.85+0.15*pop);
+  ctx.save();
+  ctx.font="700 "+fs+"px Rajdhani,Arial";
+  ctx.textAlign="center";ctx.globalAlpha=Math.min(1,pop*1.2);
+  const words=c.text.split(/\s+/);let lines=[],cur="";
+  const maxw=stage.width*0.85;
+  words.forEach(w=>{const t2=cur?cur+" "+w:w;
+    if(ctx.measureText(t2).width*scale>maxw){lines.push(cur);cur=w;}else cur=t2;});
+  if(cur)lines.push(cur);
+  if(lines.length>3){lines=lines.slice(0,3);lines[2]+="...";}
+  let y=capPos==="bottom"?stage.height-fs*0.6-lines.length*fs:(capPos==="center"?stage.height/2-lines.length*fs/2+fs*0.6:fs*1.4);
+  ctx.translate(stage.width/2,y+lines.length*fs/2);ctx.scale(scale,scale);ctx.translate(-stage.width/2,-(y+lines.length*fs/2));
+  lines.forEach((ln,i)=>{
+    const ly=y+i*fs;
+    ctx.lineWidth=fs*0.16;ctx.strokeStyle="rgba(0,0,0,.9)";ctx.lineJoin="round";
+    ctx.strokeText(ln,stage.width/2,ly);
+    ctx.fillStyle=capColor;ctx.fillText(ln,stage.width/2,ly);
+  });
+  ctx.restore();
 }
 
-$("exportBtn").onclick = async () => {
-  if (!ready || recording) return;
-  recording = true;
-  $("exportBtn").disabled = true;
-  $("estatus").textContent = "RECORDING...";
-  $("dlink").style.display = "none";
-  const [a, b] = clampTrim();
-  setupAudio();
-  if (actx && actx.state === "suspended") await actx.resume();
-  if (vGain) vGain.gain.value = $("muteorig").checked ? 0 : 1;
-  if (mGain) mGain.gain.value = $("mvol").value / 100 * 0.9;
-  const sp = +$("speed").value;
-  vid.playbackRate = sp; mus.playbackRate = sp;
-  vid.currentTime = a;
-  mus.currentTime = a / sp;
-  const stream = cv.captureStream(30);
-  if (mixDest) mixDest.stream.getAudioTracks().forEach(tr => stream.addTrack(tr));
-  const cand = ["video/mp4;codecs=avc1,mp4a.40.2", "video/webm;codecs=vp9,opus", "video/webm"];
-  const mime = cand.find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || "";
-  const rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 6000000 } : undefined);
-  const chunks = [];
-  rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
-  rec.onstop = () => {
-    const blob = new Blob(chunks, { type: rec.mimeType || "video/webm" });
-    const url = URL.createObjectURL(blob);
-    const dl = $("dlink");
-    dl.href = url;
-    dl.download = "ultron-cut." + (blob.type.includes("mp4") ? "mp4" : "webm");
-    dl.style.display = "block";
-    $("estatus").textContent = "DONE · " + (blob.size / 1048576).toFixed(1) + "MB";
-    $("exportBtn").disabled = false;
-    recording = false;
-  };
-  rec.start(500);
-  vid.play(); mus.play();
-  const iv = setInterval(() => {
-    if (vid.currentTime >= b || vid.ended) {
-      clearInterval(iv);
-      vid.pause(); mus.pause();
-      rec.stop();
-      if (vGain) vGain.gain.value = 1;
+/* ---------------- B-ROLL / MOTION ---------------- */
+$("bfile").onchange=e=>{const f=e.target.files[0];if(!f)return;
+  const img=new Image();img.onload=()=>addOverlay(img,f.name.slice(0,18));img.src=URL.createObjectURL(f);};
+async function genBroll(){
+  const p=$("brollprompt").value.trim();
+  if(!p){alert("B-roll ke liye kya dikhana hai? likho");return;}
+  $("brollprompt").disabled=true;
+  try{
+    const r=await fetch("https://image.pollinations.ai/prompt/"+encodeURIComponent(p+", cinematic, high quality")+"?width=1280&height=720&nologo=true&seed="+Math.floor(Math.random()*99999));
+    const blob=await r.blob();
+    const img=new Image();img.onload=()=>{addOverlay(img,p.slice(0,18));$("brollprompt").disabled=false;};
+    img.src=URL.createObjectURL(blob);
+  }catch(e){alert("Generate fail: "+e.message);$("brollprompt").disabled=false;}
+}
+function addOverlay(img,label){
+  if(overlays.length>=3){alert("Max 3 b-rolls");return;}
+  const dur=(trimE-trimS)||v.duration;
+  overlays.push({img,from:0,to:Math.min(3,dur),fx:"cover",label});
+  renderOvrs();
+}
+function renderOvrs(){
+  $("ovrlist").innerHTML = overlays.map((o,i)=>{
+    const opt=(val,label)=>"<option value='"+val+"'"+(o.fx===val?" selected":"")+">"+label+"</option>";
+    return "<div class='ovr'>["+(i+1)+"] "+o.label+
+      " | from <input type='number' value='"+o.from.toFixed(1)+"' step='0.5' style='width:64px' onchange='overlays["+i+"].from=+this.value'>"+
+      " to <input type='number' value='"+o.to.toFixed(1)+"' step='0.5' style='width:64px' onchange='overlays["+i+"].to=+this.value'> s"+
+      " <select onchange='overlays["+i+"].fx=this.value'>"+
+      opt("cover","Cover+zoom (Ken Burns)")+opt("fade","Fade only")+opt("pip","Small corner (PiP)")+"</select>"+
+      " <button class='btn small ghost' onclick='overlays.splice("+i+",1);renderOvrs()'>X</button></div>";
+  }).join("");
+}
+function drawOverlays(t){
+  overlays.forEach(o=>{
+    if(t<o.from||t>o.to)return;
+    const el=t-o.from,span=Math.max(0.2,o.to-o.from);
+    let a=Math.min(1,el/0.5)*Math.min(1,(o.to-t)/0.5);
+    if(o.fx==="pip"){
+      const w=stage.width*0.28,h=w*o.img.height/o.img.width;
+      ctx.globalAlpha=a;
+      ctx.drawImage(o.img,stage.width-w-12,12,w,h);
+      ctx.strokeStyle="#ff4444";ctx.lineWidth=2;ctx.strokeRect(stage.width-w-12,12,w,h);
+      ctx.globalAlpha=1;return;
     }
-  }, 80);
-};
+    const zoom=o.fx==="cover"?(1+0.10*Math.min(1,el/span)):1;
+    const iw=stage.width*zoom,ih=stage.height*zoom;
+    ctx.globalAlpha=a*0.95;
+    ctx.drawImage(o.img,(stage.width-iw)/2,(stage.height-ih)/2,iw,ih);
+    ctx.globalAlpha=1;
+  });
+}
+function drawText(t){
+  const txt=$("ttext").value;if(!txt)return;
+  const from=+$("tfrom").value,to=+$("tto").value;
+  if(t<from||t>to)return;
+  const el=t-from,span=Math.max(0.1,to-from);
+  const pos=$("tpos").value,anim=$("tanim").value,fs=+$("tsize").value*(stage.width/1280)*1.6;
+  let a=1,dy=0,sc=1,out=txt;
+  if(anim==="fade")a=Math.min(1,el/0.6)*Math.min(1,(to-t)/0.6);
+  if(anim==="slide"){a=Math.min(1,el/0.6);dy=(1-Math.min(1,el/0.6))*40;}
+  if(anim==="pop")sc=0.7+0.3*Math.min(1,el/0.35)+Math.sin(el*6)*0.015;
+  if(anim==="type")out=txt.slice(0,Math.floor(txt.length*Math.min(1,el/span*1.4)));
+  ctx.save();
+  ctx.font="700 "+fs+"px Rajdhani,Arial";ctx.textAlign="center";
+  ctx.globalAlpha=a;
+  const y=(pos==="top"?fs*1.3:pos==="center"?stage.height/2+fs*0.35:stage.height-fs*0.5)+dy;
+  ctx.translate(stage.width/2,y);ctx.scale(sc,sc);
+  ctx.lineWidth=fs*0.18;ctx.strokeStyle="rgba(0,0,0,.85)";ctx.lineJoin="round";
+  ctx.strokeText(out,0,0);ctx.fillStyle="#fff";ctx.fillText(out,0,0);
+  ctx.restore();
+}
+
+/* ---------------- DRAW LOOP ---------------- */
+function draw(){
+  if(!v.paused||exporting||true){
+    ctx.filter=(fBW?"grayscale(1) ":"")+"brightness("+fB+"%) contrast("+fC+"%) saturate("+fS+"%)";
+    if(v.src)ctx.drawImage(v,0,0,stage.width,stage.height);
+    else{ctx.fillStyle="#0a0a0a";ctx.fillRect(0,0,stage.width,stage.height);
+      ctx.fillStyle="#ff4444";ctx.font="700 28px Rajdhani";ctx.textAlign="center";
+      ctx.fillText("LOAD VIDEO TO BEGIN",stage.width/2,stage.height/2);}
+    ctx.filter="none";
+    if(v.duration){
+      const spd=+($("speedsel").value)||1;
+      const t=(v.currentTime-trimS)/spd;
+      drawOverlays(t);drawText(t);drawCaps(t,(trimE-trimS)/spd);
+      $("ctime").textContent=v.currentTime.toFixed(1)+"s";
+    }
+  }
+  requestAnimationFrame(draw);
+}
+
+/* ---------------- EXPORT ---------------- */
+async function exportVideo(){
+  if(!v.src)return;
+  updateTrim();
+  if(exporting)return;exporting=true;$("xbtn").disabled=true;
+  try{
+    actx&&actx.resume();
+    const spd=+($("speedsel").value)||1;
+    v.playbackRate=spd;
+    if(muteOrig&&vidGain)vidGain.gain.value=0;
+    if(!muteOrig&&vidGain)vidGain.gain.value=1;
+    const stream=stage.captureStream(30);
+    (recNode?recNode.stream.getAudioTracks():[]).forEach(tr=>stream.addTrack(tr));
+    const mimes=["video/mp4;codecs=avc1.64003E,mp4a.40.2","video/mp4","video/webm;codecs=vp9,opus","video/webm"];
+    const mime=mimes.find(m=>window.MediaRecorder&&MediaRecorder.isTypeSupported(m))||"";
+    const rec=new MediaRecorder(stream,mime?{mimeType:mime,videoBitsPerSecond:6000000}:{});
+    const chunks=[];rec.ondataavailable=e=>chunks.push(e.data);
+    const done=new Promise(r=>rec.onstop=r);
+    v.currentTime=trimS;music.currentTime=0;
+    if(music.src)music.play();
+    rec.start(500);
+    await v.play();
+    const total=(trimE-trimS)/spd;
+    const timer=setInterval(()=>{
+      const p=Math.min(100,((v.currentTime-trimS)/spd/total)*100);
+      $("xbar").style.width=p+"%";
+      $("xstatus").innerHTML="RECORDING... "+p.toFixed(0)+"% ( tab open rakho )";
+      if(v.currentTime>=trimE-0.05||v.ended){clearInterval(timer);
+        v.pause();music.pause();setTimeout(()=>rec.stop(),300);}
+    },300);
+    await done;
+    const blob=new Blob(chunks,{type:rec.mimeType||"video/webm"});
+    const ext=(rec.mimeType||"").includes("mp4")?"mp4":"webm";
+    const url=URL.createObjectURL(blob);
+    const dl=$("xdl");dl.href=url;dl.download="ultron-cut."+ext;dl.style.display="inline-block";dl.textContent="DOWNLOAD ("+(blob.size/1048576).toFixed(1)+"MB "+ext+")";
+    $("xstatus").innerHTML="<b class='ok'>&#10004; EXPORT DONE!</b> DOWNLOAD button dabao.";
+    $("xbar").style.width="100%";
+  }catch(e){$("xstatus").innerHTML="<b class='err'>"+e.message+"</b>";}
+  exporting=false;$("xbtn").disabled=false;
+}
+draw();
 </script>
 </body>
 </html>
