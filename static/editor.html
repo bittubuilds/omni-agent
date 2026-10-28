@@ -24,6 +24,7 @@ textarea{width:100%;background:#0d0d10;border:1px solid #2c2c33;border-radius:12
 .btn:disabled{background:#552525;cursor:wait}
 .ghost{background:transparent;border:1px solid #3a3a42;color:#c8c8cf;font-weight:500}
 .hidden{display:none}
+.offvid{position:fixed;left:-9999px;top:0;width:8px;height:8px;opacity:.01;pointer-events:none}
 .pill{display:inline-block;background:#17171c;border:1px solid #2c2c33;border-radius:99px;padding:6px 14px;font-size:.78rem;color:#b0b0b8;cursor:pointer;margin-right:8px;margin-top:8px}
 .steps{list-style:none}
 .steps li{display:flex;gap:12px;align-items:center;padding:11px 0;color:#77777e;font-size:.95rem}
@@ -88,8 +89,8 @@ a.dl{display:block;text-decoration:none;text-align:center;background:#ff3e3e;col
 </div>
 
 <div class="note hidden" id="errbox"></div>
-<video id="vid" class="hidden" muted playsinline></video>
-<video id="mus" class="hidden" loop playsinline></video>
+<video id="vid" class="offvid" playsinline></video>
+<video id="mus" class="offvid" loop playsinline></video>
 <canvas id="stage" class="hidden"></canvas>
 </div>
 <script>
@@ -273,13 +274,18 @@ function draw(t){
     ctx.restore();break;
   }
 }
+let actx=null,dest=null,vGain=null,mGain=null;
+function ensureAudio(){
+  if(actx)return;
+  const AC=window.AudioContext||window.webkitAudioContext;actx=new AC();
+  dest=actx.createMediaStreamDestination();
+  const vSrc=actx.createMediaElementSource(vid);vGain=actx.createGain();vGain.gain.value=1;vSrc.connect(vGain);vGain.connect(dest);
+  const mSrc=actx.createMediaElementSource(mus);mGain=actx.createGain();mGain.gain.value=0;mSrc.connect(mGain);mGain.connect(dest);
+}
 async function exportEdit(key){
   const dur=(trimE-trimS)/spd;
-  const AC=window.AudioContext||window.webkitAudioContext;const actx=new AC();await actx.resume();
-  const dest=actx.createMediaStreamDestination();
-  const vSrc=actx.createMediaElementSource(vid);const vGain=actx.createGain();
-  vGain.gain.value=muted?0:1;vSrc.connect(vGain);vGain.connect(dest);vGain.connect(actx.destination);
-  if(mURL){const mSrc=actx.createMediaElementSource(mus);const mGain=actx.createGain();mGain.gain.value=0.55;mSrc.connect(mGain);mGain.connect(dest);mGain.connect(actx.destination);}
+  ensureAudio();await actx.resume();
+  vGain.gain.value=muted?0:1;mGain.gain.value=mURL?0.55:0;
   const stream=stage.captureStream(30);
   dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
   const cand=["video/mp4;codecs=avc1.64003E,mp4a.40.2","video/mp4","video/webm;codecs=vp9,opus","video/webm"];
@@ -287,8 +293,11 @@ async function exportEdit(key){
   const rec=new MediaRecorder(stream,{mimeType:mime||undefined,videoBitsPerSecond:6000000});
   const chunks=[];rec.ondataavailable=e=>chunks.push(e.data);
   const stopped=new Promise(res=>rec.onstop=()=>res(new Blob(chunks,{type:mime||"video/webm"})));
-  vid.currentTime=trimS;vid.playbackRate=spd;vid.muted=true;
+  vid.playbackRate=spd;vid.muted=false;
   await new Promise(r=>{if(vid.readyState>=2)r();else vid.oncanplay=r;});
+  vid.currentTime=trimS;
+  await new Promise(r=>{if(Math.abs(vid.currentTime-trimS)<0.05)r();else vid.onseeked=r;});
+  if(mURL){mus.currentTime=0;try{await mus.play();}catch(e){}}
   await vid.play();rec.start(250);
   await new Promise(res=>{
     const loop=()=>{
@@ -299,8 +308,7 @@ async function exportEdit(key){
       if(vid.currentTime>=trimE||vid.ended||vid.paused){res();}else requestAnimationFrame(loop);
     };loop();
   });
-  vid.pause();try{rec.stop();}catch(e){}
-  try{await actx.close();}catch(e){}
+  vid.pause();mus.pause();try{rec.stop();}catch(e){}
   return await stopped;
 }
 </script>
