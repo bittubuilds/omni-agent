@@ -63,7 +63,10 @@ a.dl{display:block;text-decoration:none;text-align:center;background:#ff3e3e;col
   <div class="tiles" id="tiles"></div>
   <div><span class="pill" id="musicpill" onclick="document.getElementById('mfile').click()">+ Background music (optional)</span><span id="mname" style="font-size:.75rem;color:#8fce8f"></span></div>
   <input type="file" id="mfile" accept="audio/*" class="hidden">
-  <button class="btn" id="createbtn" onclick="createMyVideo()">Create my video</button>
+  <div style="margin-top:8px;font-size:.72rem;color:#777">AUTEUR BRAIN: <select id="orstat" style="background:#111;border:1px solid #333;color:#888;padding:2px 6px;border-radius:6px"><option value="groq">GPT-OSS-120B (Groq)</option><option value="or">Nemotron-550B ULTRA (OpenRouter)</option></select>
+<input type="password" id="orkey" placeholder="OpenRouter key paste karo (optional, free)" style="width:100%;margin-top:6px;background:#111;border:1px solid #333;color:#ccc;padding:8px 10px;border-radius:8px;font-size:.75rem">
+</div>
+<button class="btn" id="createbtn" onclick="createMyVideo()">Create my video</button>
   <div class="note">Groq key zaroori hai (ULTRON app wali) - localStorage se utha li jaati hai</div>
 </div>
 
@@ -111,6 +114,9 @@ $("tiles").innerHTML=STYLES.map((s,i)=>'<div class="tile" id="t'+i+'" onclick="p
 function pickStyle(i){styleSel=STYLES[i].p;STYLES.forEach((s,j)=>$("t"+j).classList.toggle("sel",j===i));}
 $("vfile").onchange=e=>{const f=e.target.files[0];if(!f)return;vURL=URL.createObjectURL(f);vid.src=vURL;$("prev").src=vURL;vid.onloadedmetadata=()=>{trimS=0;trimE=vid.duration;stage.width=Math.min(1280,vid.videoWidth);stage.height=Math.round(stage.width*vid.videoHeight/vid.videoWidth);$("finfo").textContent=f.name+" ("+(f.size/1048576).toFixed(0)+"MB, "+vid.duration.toFixed(0)+"s)";$("s1").classList.add("hidden");$("s2").classList.remove("hidden");};};
 $("mfile").onchange=e=>{const f=e.target.files[0];if(!f)return;mURL=URL.createObjectURL(f);mus.src=mURL;mus.load();$("mname").textContent=f.name;};
+$("orkey").value=localStorage.getItem("omni_or_key")||"";
+if($("orkey").value){$("orstat").value="or";}
+$("orkey").onchange=e=>{const v=e.target.value.trim();if(v){localStorage.setItem("omni_or_key",v);$("orstat").value="or";}else{localStorage.removeItem("omni_or_key");$("orstat").value="groq";}};
 function setStep(n,bar,note){[1,2,3,4].forEach(i=>{const li=$("st"+i);li.className=i<n?"done":i===n?"act":"";});$("pbar").style.width=bar+"%";if(note)$("pnote").innerHTML=note;}
 function show(el){["s1","s2","s3","s4"].forEach(s=>$(s).classList.add("hidden"));$(el).classList.remove("hidden");window.scrollTo(0,0);}
 function again(){show("s2");}
@@ -191,8 +197,14 @@ async function planEdit(key){
   const tr=rawCaps.map(s=>"["+s.from.toFixed(1)+"-"+s.to.toFixed(1)+"s] "+s.text).join("\n").slice(0,6000);
   const userPrompt=$("aiprompt").value.trim();
   const sys="You are AUTEUR, an elite viral reel editor (think top CapCut templates). Transcript (with file-timeline timestamps) is given. Return ONLY valid JSON: {\"hook\":string (max 40 chars - the single most shocking/curiosity-driving claim from the video, NEVER generic like 'My video'),\"hook_anim\":\"pop\"|\"slide\"|\"fade\"|\"typewriter\",\"trim\":{\"start\":number|\"end\":number},\"speed\":1|1.5,\"captions\":{\"size\":30-56,\"color\":\"#fff\"|\"#ff4444\"|\"#ffe600\"|\"#00e5ff\",\"pos\":\"bottom\"|\"center\"},\"filters\":{\"brightness\":number,\"contrast\":number,\"sat\":number,\"bw\":boolean},\"overlays\":[{\"prompt\":string,\"from\":number,\"to\":number,\"fx\":\"cover\"|\"fade\"|\"pip\"}],\"notes\":one short line in user's language}. EDITING RULES (follow strictly): 1) TRIM: start exactly at the first punchy spoken sentence - cut all intros/greetings/filler/umms (use transcript timestamps as anchors, start 0.2s BEFORE that sentence begins). End right after the payoff/answer - drop trailing outros. Target final length 15-45s. 2) HOOK: quote or sharpen the boldest line actually said in the video. 3) OVERLAYS: 1-3 b-rolls placed exactly on the moments being discussed; prompts = concrete visual nouns (e.g 'neon city street at night, cinematic'), never abstract. Cover fx for full-screen impact, pip sparingly. Times inside trim only. 4) CAPTIONS: size 40+ for talking reels, center for kinetic styles, bottom otherwise. 5) SPEED 1 unless user asked. 6) NOTES: 1 line, user's language. User instructions: "+(userPrompt||"")+(styleSel?(" | Style: "+styleSel):"");
-  const r=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+key},
-    body:JSON.stringify({model:"openai/gpt-oss-120b",response_format:{type:"json_object"},messages:[{role:"system",content:sys},{role:"user",content:"Video duration: "+(trimE-trimS).toFixed(1)+"s. Transcript:\n"+(tr||"(no speech - plan a visual edit with hook title and b-rolls)")}],temperature:0.7})});
+  const ork=localStorage.getItem("omni_or_key")||"";
+  const useOR=($("orstat")?$("orstat").value:"groq")==="or"&&ork;
+  const apiurl=useOR?"https://openrouter.ai/api/v1/chat/completions":"https://api.groq.com/openai/v1/chat/completions";
+  const apikey=useOR?ork:key;
+  const model=useOR?"nvidia/nemotron-3-ultra-550b-a55b:free":"openai/gpt-oss-120b";
+  const hdrs=useOR?{"Content-Type":"application/json",Authorization:"Bearer "+apikey,"HTTP-Referer":"https://ultronlabs-omni.static.hf.space","X-Title":"ULTRON STUDIO"}:{"Content-Type":"application/json",Authorization:"Bearer "+apikey};
+  const r=await fetch(apiurl,{method:"POST",headers:hdrs,
+    body:JSON.stringify({model:model,response_format:{type:"json_object"},messages:[{role:"system",content:sys},{role:"user",content:"Video duration: "+(trimE-trimS).toFixed(1)+"s. Transcript:\n"+(tr||"(no speech - plan a visual edit with hook title and b-rolls)")}],temperature:0.7})});
   if(!r.ok)throw new Error("Plan API: "+(await r.text()).slice(0,120));
   const d=await r.json();
   let c=d.choices[0].message.content;
