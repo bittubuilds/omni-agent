@@ -78,3 +78,12 @@ HF Space. The API key lives only in the Space, never in this repo.
 - Voice input (mic, Hindi/English) and voice replies
 - Attach text/code/CSV/JSON files and ask about them
 - Saved chat history (last 15 chats), markdown answers with copy buttons
+
+## ULTRON UI (v2.1)
+
+Command-center redesign: neon red on black, sidebar (Home/Task Manager/Memory/
+Models/Tools/Settings/Logs), hero with pulsing halo, capability cards, live
+system status (real API latency/network/localStorage metrics), task manager the
+agent updates itself (add_task/complete_task tools), activity logs, model
+switcher (live Groq model list). Fully responsive; on phones sidebar and status
+panel become drawers.
