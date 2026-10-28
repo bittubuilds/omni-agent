@@ -374,6 +374,7 @@ const SYSTEM_PROMPT =
   "- User gives a goal/plan/todo: create tasks with add_task, and mark done with complete_task when finished. " +
   "- Calculations or data: run_js with JavaScript. " +
   "Write code in any language. Use markdown, code blocks with language tags. " +
+  "When the user wants to post on social media (Reddit, Instagram, YouTube, LinkedIn, WhatsApp, X etc), write the post text in their style (with hashtags/emojis where fitting), adapt it to the platform, then call share_post with the final text. " +
   "CRITICAL LANGUAGE RULE: ALWAYS reply in the exact same language and script as the user's last message. English question -> English answer. Hinglish -> Hinglish. Pure Hindi -> pure Hindi. Marathi -> Marathi. Any language on Earth -> that same language. Never switch unless the user switches. Your search_web tool WORKS and queries multiple live sources in parallel (web search, global news via GDELT, tech news via Hacker News, encyclopedia). Always use it for current info, news, prices, facts. Pass ENGLISH keywords even if the user speaks another language. If a search returns no results, retry once with simpler keywords. Think step by step.";
 
 let messages = [{ role: "system", content: SYSTEM_PROMPT }];
@@ -532,6 +533,63 @@ function complete_task(title) {
   return "No matching open task. Open tasks: " + tasks.filter(t => !t.done).map(t => t.title).join("; ") || "none";
 }
 
+async function share_post(text) {
+  logAction("Broadcast drafted: " + text.slice(0, 30));
+  const card = document.createElement("div");
+  card.style.cssText = "align-self:flex-start;max-width:min(92%,720px);border:1px solid var(--red2);background:var(--panel2);padding:12px 14px;border-radius:3px;box-shadow:0 0 12px rgba(255,0,0,.2)";
+  const preview = document.createElement("div");
+  preview.style.cssText = "font-size:.85rem;color:var(--white);white-space:pre-wrap;border:1px solid var(--line2);background:#070709;padding:8px 10px;margin-bottom:10px;max-height:120px;overflow-y:auto";
+  preview.textContent = text;
+  card.appendChild(preview);
+  const label = document.createElement("div");
+  label.style.cssText = "font-size:.68rem;letter-spacing:.2em;color:var(--dim);margin-bottom:8px";
+  label.textContent = "BROADCAST - PICK PLATFORM";
+  card.appendChild(label);
+  const grid = document.createElement("div");
+  grid.style.cssText = "display:flex;flex-wrap:wrap;gap:6px";
+  const enc = encodeURIComponent(text);
+  const title = text.split("\n")[0].slice(0, 90);
+  const platforms = [
+    ["🟢 WHATSAPP", "https://wa.me/?text=" + enc, "whatsapp"],
+    ["🔵 TELEGRAM", "https://t.me/share/url?url=" + encodeURIComponent("https://ultronlabs-omni.static.hf.space") + "&text=" + enc, "telegram"],
+    ["🔴 REDDIT", "https://www.reddit.com/submit?title=" + encodeURIComponent(title) + "&url=" + encodeURIComponent("https://ultronlabs-omni.static.hf.space"), "reddit"],
+    ["✖ X / TWITTER", "https://twitter.com/intent/tweet?text=" + enc, "x"],
+    ["💼 LINKEDIN", "https://www.linkedin.com/feed/?shareActive=true&text=" + enc, "linkedin"],
+    ["📘 FACEBOOK", "https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent("https://ultronlabs-omni.static.hf.space") + "&quote=" + enc, "facebook"],
+    ["📸 INSTAGRAM*", "", "insta"],
+    ["🌐 NATIVE SHARE", "", "native"],
+  ];
+  platforms.forEach(p => {
+    const b = document.createElement("button");
+    b.style.cssText = "border:1px solid var(--line2);background:var(--bg);color:var(--white);padding:8px 12px;font-size:.75rem;letter-spacing:.08em;border-radius:2px;cursor:pointer;font-family:inherit";
+    b.textContent = p[0];
+    b.onclick = async () => {
+      logAction("Broadcast -> " + p[2]);
+      if (p[2] === "native") {
+        if (navigator.share) { try { await navigator.share({ text: text, title: title }); } catch (e) {} return; }
+        alert("Native share sirf mobile Chrome me hai. Dusre buttons use karo.");
+        return;
+      }
+      if (p[2] === "insta") {
+        if (navigator.share) { try { await navigator.share({ text: text, title: title }); } catch (e) {} return; }
+        alert("Instagram direct web-post nahi kar sakta. Text copy kiya - Instagram app me paste karo.");
+        navigator.clipboard.writeText(text);
+        return;
+      }
+      window.open(p[1], "_blank");
+    };
+    grid.appendChild(b);
+  });
+  card.appendChild(grid);
+  const note = document.createElement("div");
+  note.style.cssText = "font-size:.62rem;color:var(--dim);margin-top:8px;letter-spacing:.05em";
+  note.textContent = "* Instagram: native share menu khulega (mobile). Post preview text box me upar hai - copy bhi kar sakte ho.";
+  card.appendChild(note);
+  chatEl.appendChild(card);
+  chatEl.scrollTop = chatEl.scrollHeight;
+  return "Broadcast card displayed to the user with platform buttons (WhatsApp, Telegram, Reddit, X, LinkedIn, Facebook, Instagram, native share). The text is ready - user picks the platform and confirms the post there.";
+}
+
 function run_js(code) {
   try {
     const logs = [];
@@ -552,9 +610,10 @@ const TOOLS = [
   { type: "function", function: { name: "recall", description: "Search long-term memory.", parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } } },
   { type: "function", function: { name: "add_task", description: "Add a task/to-do item to the task manager.", parameters: { type: "object", properties: { title: { type: "string" } }, required: ["title"] } } },
   { type: "function", function: { name: "complete_task", description: "Mark a matching open task as completed.", parameters: { type: "object", properties: { title: { type: "string" } }, required: ["title"] } } },
+  { type: "function", function: { name: "share_post", description: "Draft a social media post and show broadcast buttons to the user (WhatsApp, Telegram, Reddit, X, LinkedIn, Facebook, Instagram). The user confirms posting on the platform.", parameters: { type: "object", properties: { text: { type: "string", description: "The final post text" } }, required: ["text"] } } },
   { type: "function", function: { name: "run_js", description: "Execute JavaScript code. Return a value or console.log output.", parameters: { type: "object", properties: { code: { type: "string" } }, required: ["code"] } } }
 ];
-const TOOL_IMPLS = { search_web, weather, generate_image, remember, recall, add_task, complete_task, run_js };
+const TOOL_IMPLS = { search_web, weather, generate_image, remember, recall, add_task, complete_task, share_post, run_js };
 
 // ---------------- CHAT LOOP ----------------
 async function agentReply() {
