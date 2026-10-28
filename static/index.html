@@ -272,7 +272,15 @@ button { font-family:inherit; cursor:pointer; }
 
   <div id="chat"></div>
 
-  <div id="cmdbar">
+  <style>
+#typing { align-self:flex-start; display:flex; gap:5px; align-items:center; padding:10px 14px; background:var(--panel2); border:1px solid var(--line2); border-left:2px solid var(--red2); border-radius:3px; }
+#typing i { width:7px; height:7px; border-radius:50%; background:var(--red2); box-shadow:0 0 6px rgba(255,0,0,.6); animation:tdot 1.2s infinite; }
+#typing i:nth-child(2){animation-delay:.2s} #typing i:nth-child(3){animation-delay:.4s}
+#typing span { font-size:.72rem; color:var(--dim); letter-spacing:.15em; margin-left:6px; }
+@keyframes tdot { 0%,100% { opacity:.25; transform:translateY(0);} 50% { opacity:1; transform:translateY(-3px);} }
+#input { min-height:46px; }
+</style>
+<div id="cmdbar">
     <div class="cmdwrap">
       <div class="cmdrow">
         <button class="btn sec" id="micbtn" onclick="toggleMic()" title="Speak">🎤</button>
@@ -405,16 +413,38 @@ if (!apiKey) document.getElementById("setup").style.display = "flex";
 // ---------------- TOOLS ----------------
 async function search_web(query) {
   const out = [];
+  // 1) Real DuckDuckGo results via jina reader proxy (CORS-friendly)
+  try {
+    const r = await fetch("https://r.jina.ai/https://html.duckduckgo.com/html/?q=" + encodeURIComponent(query), { timeout: 15000 });
+    if (r.ok) {
+      const md = await r.text();
+      const re = /\[([^\]]{4,120})\]\(https:\/\/duckduckgo\.com\/l\/\?uddg=([^)&]+)/g;
+      let m, n = 0;
+      while ((m = re.exec(md)) && n < 6) {
+        const url = decodeURIComponent(m[2]);
+        const title = m[1].replace(/\[Image[^\]]*\]/g, "").trim();
+        if (title && url.startsWith("http") && !out.some(o => o.includes(title))) {
+          out.push("- " + title + " (" + url + ")");
+          n++;
+        }
+      }
+    }
+  } catch (e) {}
+  if (out.length >= 3) return out.join("\n");
+  // 2) DuckDuckGo Instant Answers
   try {
     const r = await fetch("https://api.duckduckgo.com/?q=" + encodeURIComponent(query) + "&format=json&no_html=1&skip_disambig=1");
     const d = await r.json();
     if (d.AbstractText) out.push("- " + d.Heading + ": " + d.AbstractText + " (" + d.AbstractURL + ")");
-    (d.RelatedTopics || []).slice(0, 5).forEach(t => { if (t.Text) out.push("- " + t.Text + " (" + t.FirstURL + ")"); });
+    (d.RelatedTopics || []).slice(0, 4).forEach(t => { if (t.Text) out.push("- " + t.Text + " (" + t.FirstURL + ")"); });
   } catch (e) {}
+  // 3) Wikipedia
   try {
-    const r2 = await fetch("https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=" + encodeURIComponent(query) + "&format=json&origin=*&srlimit=4");
+    const r2 = await fetch("https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=" +
+      encodeURIComponent(query) + "&format=json&origin=*&srlimit=4");
     const d2 = await r2.json();
-    (d2.query.search || []).forEach(s => out.push("- " + s.title + " (https://en.wikipedia.org/wiki/" + encodeURIComponent(s.title.replace(/ /g, "_")) + "): " + s.snippet.replace(/<[^>]+>/g, "")));
+    (d2.query.search || []).forEach(s => out.push("- " + s.title + " (https://en.wikipedia.org/wiki/" +
+      encodeURIComponent(s.title.replace(/ /g, "_")) + "): " + s.snippet.replace(/<[^>]+>/g, "")));
   } catch (e) {}
   return out.length ? out.join("\n") : "No results found. Try different words.";
 }
@@ -830,7 +860,10 @@ async function send() {
   chatEl.querySelector("#hero")?.remove();
   messages.push({ role: "user", content: text });
   logAction("Command: " + text.slice(0, 34));
-  const think = addBubble("bot", "▮▮▮");
+  const think = document.createElement("div");
+  think.id = "typing";
+  think.innerHTML = "<i></i><i></i><i></i><span>ULTRON PROCESSING</span>";
+  chatEl.appendChild(think); chatEl.scrollTop = chatEl.scrollHeight;
   try {
     const answer = await agentReply();
     think.remove();
